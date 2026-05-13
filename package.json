@@ -1,0 +1,15 @@
+{
+  "name": "casa-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev:flagship": "npm --prefix apps/flagship run dev",
+    "build:flagship": "npm --prefix apps/flagship run build",
+    "start:flagship": "npm --prefix apps/flagship start",
+    "lint:flagship": "npm --prefix apps/flagship run lint",
+    "test:flagship": "npm --prefix apps/flagship test",
+    "dev:control-plane": "cd apps/control-plane && python -m uvicorn governance_api:app --host 127.0.0.1 --port 5000",
+    "test:control-plane": "cd apps/control-plane && python -m pytest",
+    "test": "npm run test:flagship && npm run test:control-plane"
+  }
+}

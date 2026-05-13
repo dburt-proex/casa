@@ -1,0 +1,313 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import json
+import os
+from pathlib import Path
+
+from casa.risk_engine import classify_risk
+from casa.gate_engine import gate_decision
+from casa.policy_loader import load_policy, check_policy
+from casa.ledger import log_event
+
+from casa.policy_simulator import PolicySimulator
+from casa.audit_ledger import read_ledger
+from casa.decision_replay import DecisionReplayEngine
+from casa.telemetry.governance_dashboard import GovernanceDashboard
+from casa.telemetry.boundary_stress_meter import BoundaryStressMeter
+
+
+APP_ROOT = Path(__file__).resolve().parent
+
+
+def _parse_cors_origins() -> list[str]:
+    raw_origins = os.getenv("CORS_ORIGINS", "*")
+    origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+    return origins or ["*"]
+
+
+def _resolve_policy_candidate_path(candidate_path: str) -> Path:
+    candidate = Path(candidate_path).expanduser()
+    if not candidate.is_absolute():
+        candidate = APP_ROOT / candidate
+
+    resolved = candidate.resolve()
+    if resolved.suffix.lower() != ".json":
+        raise HTTPException(status_code=400, detail="Policy candidate must be a JSON file")
+    if APP_ROOT not in (resolved, *resolved.parents):
+        raise HTTPException(status_code=400, detail="Policy candidate path is outside the app directory")
+    return resolved
+
+
+app = FastAPI(
+    title="CASA Governance API",
+    description="Deterministic Governance Control Plane for Agentic Systems",
+    version="1.0"
+)
+
+_cors_origins = _parse_cors_origins()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials="*" not in _cors_origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class GovernanceRequest(BaseModel):
+    agent: str
+    action: str
+    signals: dict
+
+
+class PolicyDryRunRequest(BaseModel):
+    policy_candidate_path: str
+
+
+class ReviewDecisionRequest(BaseModel):
+    action: str
+    reviewer: str = "operator"
+    notes: str = ""
+
+
+@app.post("/evaluate")
+def evaluate_governance(request: GovernanceRequest):
+    policy = load_policy()
+    risk = classify_risk(request.action, signals_context=request.signals)
+    policy_result = check_policy(request.agent, request.action, policy=policy)
+    decision = gate_decision(policy_result, risk)
+
+    log_event(
+        request.agent,
+        request.action,
+        risk,
+        decision,
+        signals=request.signals,
+        policy_version=policy.get("version", "unknown")
+    )
+
+    return {
+        "agent": request.agent,
+        "action": request.action,
+        "risk": risk,
+        "decision": decision
+    }
+
+
+@app.get("/ledger")
+def get_ledger():
+    try:
+        return read_ledger()
+    except FileNotFoundError:
+        return []
+
+
+@app.get("/policy")
+def get_policy():
+    return load_policy()
+
+
+@app.post("/policy/dryrun")
+def policy_dryrun(request: PolicyDryRunRequest):
+    try:
+        policy_candidate_path = _resolve_policy_candidate_path(request.policy_candidate_path)
+        with open(policy_candidate_path, encoding="utf-8") as f:
+            candidate_policy = json.load(f)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Policy file not found")
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON in policy file")
+
+    try:
+        ledger_entries = read_ledger()
+    except FileNotFoundError:
+        return {
+            "decisions_analyzed": 0,
+            "decisions_that_change": 0,
+            "routing_changes": 0,
+            "conflicts": [],
+            "risk_indicators": [],
+            "confidence": 0.0,
+            "recommendation": "NO_DATA"
+        }
+
+    simulator = PolicySimulator(candidate_policy, ledger_entries)
+    return simulator.simulate()
+
+
+@app.get("/decisions/flagged")
+def list_flagged_decisions():
+    try:
+        ledger_entries = read_ledger()
+    except FileNotFoundError:
+        return []
+
+    reviewed_ids = {
+        entry.get("signals", {}).get("reviewed_decision_id")
+        for entry in ledger_entries
+        if entry.get("action") == "review_decision"
+    }
+
+    flagged = []
+    for entry in ledger_entries:
+        if entry.get("decision") == "REVIEW":
+            decision_id = entry.get("decision_id")
+            if decision_id and decision_id not in reviewed_ids:
+                flagged.append({
+                    "id": decision_id,
+                    "decision_id": decision_id,
+                    "timestamp": entry.get("time"),
+                    "agent": entry.get("agent"),
+                    "action": entry.get("action"),
+                    "status": "REVIEW",
+                    "risk": entry.get("risk"),
+                    "policy_version": entry.get("policy_version"),
+                    "signals": entry.get("signals", {}),
+                    "reason": "Decision requires human review"
+                })
+
+    return flagged
+
+
+@app.post("/decisions/{decision_id}/review")
+def review_decision(decision_id: str, request: ReviewDecisionRequest):
+    review_action = request.action.upper()
+    if review_action not in {"APPROVE", "HALT"}:
+        raise HTTPException(status_code=400, detail="Invalid action")
+
+    try:
+        ledger_entries = read_ledger()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Ledger not found")
+
+    original = next((e for e in ledger_entries if e.get("decision_id") == decision_id), None)
+    if not original:
+        raise HTTPException(status_code=404, detail="Decision not found")
+
+    if original.get("decision") != "REVIEW":
+        raise HTTPException(status_code=409, detail="Only REVIEW decisions can be reviewed")
+
+    already_reviewed = any(
+        e.get("action") == "review_decision" and
+        e.get("signals", {}).get("reviewed_decision_id") == decision_id
+        for e in ledger_entries
+    )
+    if already_reviewed:
+        raise HTTPException(status_code=409, detail="Already reviewed")
+
+    final_decision = "ALLOW" if review_action == "APPROVE" else "HALT"
+    policy = load_policy()
+    log_event(
+        request.reviewer,
+        "review_decision",
+        original.get("risk"),
+        final_decision,
+        signals={
+            "reviewed_decision_id": decision_id,
+            "review_action": review_action,
+            "review_notes": request.notes,
+        },
+        policy_version=policy.get("version", "unknown")
+    )
+
+    return {
+        "success": True,
+        "decision_id": decision_id,
+        "final_decision": final_decision
+    }
+
+
+@app.get("/decision-replay/{decision_id}")
+def replay_single_decision(decision_id: str):
+    try:
+        engine = DecisionReplayEngine()
+        return engine.replay_decision(decision_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+class DecisionReplayBatchRequest(BaseModel):
+    agent_filter: str = None
+    action_filter: str = None
+    limit: int = 100
+
+
+@app.post("/decision-replay/batch")
+def replay_batch_decisions(request: DecisionReplayBatchRequest):
+    try:
+        engine = DecisionReplayEngine()
+        return engine.replay_batch(
+            agent_filter=request.agent_filter,
+            action_filter=request.action_filter,
+            limit=request.limit
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/decision-replay/all")
+def replay_all_decisions():
+    try:
+        engine = DecisionReplayEngine()
+        return engine.replay_all_decisions()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Ledger not found")
+
+
+@app.get("/boundary-stress")
+def get_boundary_stress():
+    try:
+        meter = BoundaryStressMeter()
+        return meter.compute_stress()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Ledger not found")
+
+
+@app.get("/dashboard")
+def get_dashboard_json():
+    try:
+        dashboard = GovernanceDashboard()
+        return dashboard.get_json_dashboard()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Ledger not found")
+
+
+@app.get("/dashboard/text")
+def get_dashboard_text():
+    try:
+        dashboard = GovernanceDashboard()
+        return {
+            "dashboard": dashboard.render_text_dashboard(),
+            "system_safe": dashboard.is_system_safe(),
+            "requires_attention": dashboard.requires_attention(),
+            "recommendation": dashboard.get_recommendation(),
+        }
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Ledger not found")
+
+
+@app.get("/")
+def serve_dashboard():
+    dashboard_path = os.path.join(os.path.dirname(__file__), "dashboard.html")
+    if os.path.exists(dashboard_path):
+        return FileResponse(dashboard_path, media_type="text/html")
+    return {
+        "message": "CASA Governance API",
+        "endpoints": {
+            "api_docs": "/docs",
+            "dashboard": "/dashboard (JSON)",
+            "dashboard_text": "/dashboard/text",
+            "boundary_stress": "/boundary-stress",
+            "ledger": "/ledger",
+            "policy": "/policy",
+            "flagged_decisions": "/decisions/flagged",
+            "health": "/health"
+        }
+    }
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "CASA Governance API running"}

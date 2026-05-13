@@ -1,0 +1,5 @@
+{
+  "name": "CASA-FLAGSHIP",
+  "description": "Ai governance control plain designed to route agentic software through a 3 gate system ( allow, review, halt) that sits above the reasoning models, using a verified intelligence liability grading system to determine high risks agentic decision making and stopping problems before they even happen. followed with  an always repeatable audit ledger system so every output is recorded and reproducible. ",
+  "requestFramePermissions": []
+}
