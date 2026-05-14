@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
+import { useAuth as useClerkAuth, useUser } from '@clerk/react';
 
 interface User {
   email: string;
@@ -18,14 +18,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-  const clerkAuth = clerkPublishableKey ? useClerkAuth() : null;
-  const clerkUser = clerkPublishableKey ? useUser() : null;
+  const clerkConfigured = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+  const clerkAuth = useClerkAuth();
+  const clerkUser = useUser();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    if (clerkPublishableKey) return;
+    if (clerkConfigured) return;
 
     const storedToken = localStorage.getItem('casa_token');
     const storedUser = localStorage.getItem('casa_user');
@@ -48,10 +48,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('casa_user');
       }
     }
-  }, [clerkPublishableKey]);
+  }, [clerkConfigured]);
 
   useEffect(() => {
-    if (!clerkPublishableKey || !clerkAuth?.isSignedIn || !clerkUser?.user) return;
+    if (!clerkConfigured || !clerkAuth.isSignedIn || !clerkUser.user) return;
 
     const syncClerkSession = async () => {
       const clerkToken = await clerkAuth.getToken();
@@ -64,10 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     void syncClerkSession();
-  }, [clerkAuth, clerkPublishableKey, clerkUser?.user]);
+  }, [clerkAuth, clerkConfigured, clerkUser.user]);
 
   const login = async (role: string = 'operator') => {
-    if (clerkPublishableKey) return;
+    if (clerkConfigured) return;
 
     try {
       const res = await fetch('/api/auth/dev-login', {
@@ -89,8 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    if (clerkPublishableKey) {
-      void clerkAuth?.signOut();
+    if (clerkConfigured) {
+      void clerkAuth.signOut();
     }
     setToken(null);
     setUser(null);

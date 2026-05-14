@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SignedOut, SignInButton } from '@clerk/clerk-react';
+import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/react';
 import { Activity, Shield, History, Play, MessageSquare, AlertTriangle, LogOut, ShieldAlert, Terminal, ClipboardList } from 'lucide-react';
 import { cn } from './lib/utils';
 import { PolicyLab } from './features/policy-lab/PolicyLab';
@@ -30,11 +30,21 @@ export default function App() {
 
           <div className="space-y-4">
             {clerkEnabled ? (
-              <SignedOut>
-                <SignInButton mode="modal">
-                  <button className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium">Sign in</button>
-                </SignInButton>
-              </SignedOut>
+              <>
+                <Show when="signed-out">
+                  <SignInButton mode="modal">
+                    <button className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium">Sign in</button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <button className="w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg font-medium">Create account</button>
+                  </SignUpButton>
+                </Show>
+                <Show when="signed-in">
+                  <div className="flex justify-center">
+                    <UserButton />
+                  </div>
+                </Show>
+              </>
             ) : (
               <>
                 <button onClick={async () => { setIsLoggingIn(true); await login('operator'); setIsLoggingIn(false); }} disabled={isLoggingIn} className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium disabled:opacity-50">Login as Operator</button>
@@ -91,6 +101,13 @@ export default function App() {
         </nav>
 
         <div className="p-4 border-t border-gray-800/60">
+          {clerkEnabled && (
+            <Show when="signed-in">
+              <div className="mb-3 flex items-center justify-center">
+                <UserButton />
+              </div>
+            </Show>
+          )}
           <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-gray-400 hover:bg-gray-800/50 hover:text-red-400">
             <LogOut className="w-4 h-4" />
             Sign Out

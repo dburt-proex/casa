@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
 
+dotenv.config({ path: '.env.local' });
 dotenv.config();
 
 try {

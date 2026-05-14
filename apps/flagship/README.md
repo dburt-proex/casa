@@ -13,11 +13,10 @@ It provides a web UI and server orchestration layer for:
 - review queue workflows
 - operator tooling and future admin workflows
 
-This repository is the frontend and server integration layer. It connects only to the canonical CASA governance backend:
+This app is the frontend and server integration layer in the canonical `dburt-proex/casa` monorepo. It connects to the CASA governance backend in `apps/control-plane`:
 
 ```txt
-Backend: dburt-proex/casa-control-plane
-Branch: master
+Backend: apps/control-plane
 Runtime: Python
 Start: uvicorn governance_api:app --host 0.0.0.0 --port $PORT
 Health: /health
@@ -29,7 +28,7 @@ Current build is intended for design partner evaluation and controlled prototype
 
 ## Architecture
 
-### This repo: `dburt-proex/CASA-Flagship`
+### This app: `apps/flagship`
 
 Responsible for:
 
@@ -41,7 +40,7 @@ Responsible for:
 - dashboard, replay, review, and policy surfaces
 - future auth, audit, and session integrations
 
-### Backend repo: `dburt-proex/casa-control-plane`
+### Backend app: `apps/control-plane`
 
 Responsible for:
 
@@ -80,7 +79,7 @@ The canonical backend repository already contains these routes in `governance_ap
 
 ## Environment Variables
 
-Create a local `.env` file or configure these in your deployment platform.
+Create a local `.env.local` file or configure these in your deployment platform. Clerk's React Vite setup uses `VITE_CLERK_PUBLISHABLE_KEY`; see https://clerk.com/docs/react/getting-started/quickstart.
 
 Required:
 
@@ -120,10 +119,11 @@ Notes:
 npm install
 ```
 
-2. Configure `.env`:
+2. Configure `.env.local`:
 
 ```env
 CASA_GOVERNANCE_API_URL=http://127.0.0.1:5000
+VITE_CLERK_PUBLISHABLE_KEY=
 ENABLE_DEV_LOGIN=true
 JWT_SECRET=
 ```
@@ -131,7 +131,7 @@ JWT_SECRET=
 3. Run the CASA governance backend separately:
 
 ```bash
-cd ../casa-control-plane
+cd ../control-plane
 pip install -r requirements.txt
 uvicorn governance_api:app --host 127.0.0.1 --port 5000
 ```

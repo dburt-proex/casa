@@ -29,11 +29,11 @@ Run the Flagship app in another terminal:
 ```bash
 cd apps/flagship
 npm ci
-copy .env.example .env
+copy .env.example .env.local
 npm run dev
 ```
 
-Set `CASA_GOVERNANCE_API_URL=http://127.0.0.1:5000` in `apps/flagship/.env`.
+Set `CASA_GOVERNANCE_API_URL=http://127.0.0.1:5000` in `apps/flagship/.env.local`. For Clerk local auth, set `VITE_CLERK_PUBLISHABLE_KEY` from the Clerk React quickstart: https://clerk.com/docs/react/getting-started/quickstart.
 
 ## Render Deployment
 

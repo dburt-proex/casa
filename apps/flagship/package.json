@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "tsx server.ts",
     "start": "node dist/server/server.js",
@@ -15,7 +18,7 @@
   },
   "dependencies": {
     "@clerk/backend": "^2.26.0",
-    "@clerk/clerk-react": "^5.55.0",
+    "@clerk/react": "latest",
     "@google/genai": "^1.29.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
