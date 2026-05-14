@@ -200,7 +200,7 @@ describe('normalizeBoundaryStress', () => {
 
 const DRY_RUN_PAYLOAD = {
   policyId: 'POL-001',
-  parameters: {},
+  parameters: { policy_candidate_path: 'policy-candidates/POL-001.json' },
   environment: 'staging' as const,
 };
 
@@ -269,6 +269,36 @@ describe('normalizePolicyDryRun', () => {
     expect(result.simulatedOutcome).toBe('0 decisions would change under candidate policy.');
     expect(result.impactScore).toBe(0);
     expect(result.logs).toEqual([]);
+  });
+
+  it('sends explicit candidate path and environment to the governance API', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => null },
+      text: async () => JSON.stringify({}),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await backendBridge.runDryRun({
+      policyId: 'POL-102',
+      parameters: { policy_candidate_path: 'policy-candidates/POL-102-data-egress-boundary.json' },
+      environment: 'production',
+    });
+
+    const request = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(request).toEqual({
+      policy_candidate_path: 'policy-candidates/POL-102-data-egress-boundary.json',
+      environment: 'production',
+    });
+  });
+
+  it('rejects dry runs without a configured candidate path', async () => {
+    mockFetch({});
+    await expect(backendBridge.runDryRun({
+      policyId: 'POL-404',
+      parameters: {},
+      environment: 'staging',
+    })).rejects.toThrow('No policy candidate path configured');
   });
 });
 

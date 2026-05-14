@@ -93,6 +93,35 @@ def test_evaluate_returns_correct_fields():
     assert "action" in data
     assert "risk" in data
     assert "decision" in data
+    assert "reason" in data
+    assert "reasonCode" in data
+    assert "policyResult" in data
+    assert "riskFactors" in data
+    assert "signalsUsed" in data
+    assert "recommendedNextStep" in data
+
+
+def test_evaluate_persists_reason_fields_in_ledger():
+    """Test that deterministic reason payload is stored as decision evidence."""
+    response = client.post("/evaluate", json={
+        "agent": "agent_01",
+        "action": "write_database",
+        "signals": {"risk_score": 0.75}
+    })
+    assert response.status_code == 200
+    decision_id = response.json().get("decision_id")
+
+    ledger_response = client.get("/ledger")
+    assert ledger_response.status_code == 200
+    entries = ledger_response.json()
+    matching = [
+        entry for entry in entries
+        if entry.get("agent") == "agent_01" and entry.get("action") == "write_database"
+    ]
+    assert matching
+    assert matching[-1]["reason_code"] == "RISK_HIGH_REVIEW"
+    assert matching[-1]["policy_result"] == "REVIEW"
+    assert matching[-1]["reason"]
 
 
 # --------Policy Dry-Run--------
@@ -104,6 +133,26 @@ def test_dryrun_missing_file():
     })
     # Should return 404 since file doesn't exist
     assert response.status_code == 404
+
+
+def test_dryrun_candidate_policy_returns_explicit_report():
+    """Test policy dryrun with a configured candidate policy file."""
+    response = client.post("/policy/dryrun", json={
+        "policy_candidate_path": "policy-candidates/POL-102-data-egress-boundary.json",
+        "environment": "production"
+    })
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["candidate_policy_path"] == "policy-candidates/POL-102-data-egress-boundary.json"
+    assert data["environment"] == "production"
+    assert "decisions_analyzed" in data
+    assert "decisions_that_change" in data
+    assert "routing_changes" in data
+    assert "conflicts" in data
+    assert "confidence" in data
+    assert "recommendation" in data
+    assert "logs" in data
 
 
 # --------Risk Classification--------

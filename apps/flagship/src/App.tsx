@@ -11,6 +11,7 @@ import { ReviewGate } from './features/review/ReviewGate';
 import { OpsMetricsView } from './components/OpsMetricsView';
 import { WorkflowIntake } from './features/intake/WorkflowIntake';
 import { useAuth } from './contexts/AuthContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -121,7 +122,9 @@ export default function App() {
       </aside>
 
       <main className="flex-1 overflow-auto p-8">
-        {renderContent()}
+        <ErrorBoundary name={activeTab}>
+          {renderContent()}
+        </ErrorBoundary>
       </main>
     </div>
   );

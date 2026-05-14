@@ -19,6 +19,11 @@ if (!rawApiKey) {
 
 const ai = new GoogleGenAI({ apiKey: rawApiKey || 'UNCONFIGURED_KEY' });
 
+const POLICY_CANDIDATE_PATHS: Record<string, string> = {
+  'POL-102': 'policy-candidates/POL-102-data-egress-boundary.json',
+  'POL-105': 'policy-candidates/POL-105-rate-limit-override.json',
+};
+
 // Redis Session Storage
 const redisUrl = process.env.REDIS_URL;
 const isLocalRedis = !redisUrl || redisUrl.includes('localhost') || redisUrl.includes('127.0.0.1') || redisUrl.includes('<host>');
@@ -95,7 +100,7 @@ function handleGeminiError(error: any, context: string, requestId?: string): nev
     throw new Error("The AI service took too long to respond. Please try again.");
   }
   
-  if (errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid') || errMsg.includes('UNCONFIGURED_KEY')) {
+  if (errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid') || errMsg.includes('UNCONFIGURED_KEY') || errMsg.includes('GEMINI_API_KEY')) {
     console.error(`[Gemini Error] Invalid API Key detected during ${context}. RequestID: ${requestId}`);
     throw new Error("AI Service configuration error: Missing or invalid GEMINI_API_KEY or gemini-casa-api. Please configure it in the Settings menu.");
   }
@@ -169,9 +174,15 @@ export async function executeTool(call: any, requestId?: string) {
         if (!args || typeof args.policyId !== 'string' || args.policyId.length > 100) {
           throw new Error("Missing or invalid 'policyId' argument (max 100 chars)");
         }
+        if (!POLICY_CANDIDATE_PATHS[args.policyId]) {
+          throw new Error(`No candidate policy is configured for ${args.policyId}`);
+        }
         result = await backendBridge.runDryRun({ 
           policyId: args.policyId, 
-          parameters: args.parameters || {}, 
+          parameters: {
+            ...(args.parameters || {}),
+            policy_candidate_path: POLICY_CANDIDATE_PATHS[args.policyId],
+          },
           environment: args.environment || 'staging' 
         }, requestId);
         break;
@@ -222,7 +233,14 @@ export async function executeTool(call: any, requestId?: string) {
 // Gemini Service
 // ============================================================================
 export const geminiService = {
+  isConfigured() {
+    return Boolean(rawApiKey);
+  },
+
   async handleChat(sessionId: string, message: string, requestId?: string) {
+    if (!rawApiKey) {
+      throw new Error("AI explanation is unavailable until GEMINI_API_KEY is configured.");
+    }
     const history = await getChatHistory(sessionId);
     
     const chat = ai.chats.create({
@@ -287,6 +305,9 @@ export const geminiService = {
 
   async explainData(context: string, data: any): Promise<string> {
     try {
+      if (!rawApiKey) {
+        throw new Error("AI explanation is unavailable until GEMINI_API_KEY is configured.");
+      }
       if (context.length > 500) throw new Error("Context too long");
       const dataStr = JSON.stringify(data, null, 2);
       if (dataStr.length > 10000) throw new Error("Data payload too large");
@@ -307,6 +328,9 @@ export const geminiService = {
 
   async analyzePolicy(policyId: string, dryRunResult: any): Promise<any> {
     try {
+      if (!rawApiKey) {
+        throw new Error("AI policy analysis is unavailable until GEMINI_API_KEY is configured.");
+      }
       if (policyId.length > 100) throw new Error("Policy ID too long");
       const resultStr = JSON.stringify(dryRunResult, null, 2);
       if (resultStr.length > 20000) throw new Error("Dry run result payload too large");

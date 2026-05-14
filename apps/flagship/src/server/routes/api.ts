@@ -37,6 +37,16 @@ apiRouter.get("/ops/metrics", (req, res) => {
   res.json(opsMetrics.getMetrics());
 });
 
+apiRouter.get("/config/status", authenticate, (_req, res) => {
+  res.json({
+    clerkConfigured: !!process.env.CLERK_SECRET_KEY?.trim(),
+    geminiConfigured: geminiService.isConfigured(),
+    backendConfigured: !!(process.env.CASA_GOVERNANCE_API_URL || process.env.CASA_API_URL || process.env.BACKEND_API_URL),
+    postgresConfigured: !!process.env.DATABASE_URL?.trim(),
+    corsOriginsConfigured: !!process.env.CORS_ORIGINS?.trim(),
+  });
+});
+
 apiRouter.get('/debug-env', (req, res) => {
   if (isProduction()) {
     return res.status(404).json({ error: 'Not found' });
@@ -121,7 +131,10 @@ apiRouter.post('/policy/dryrun', requireAdmin, async (req, res) => {
     const data = await backendBridge.runDryRun(payload, req.headers['x-request-id'] as string);
     res.json(data);
   } catch (error: any) {
-    res.status(400).json({ error: 'Invalid request schema', details: error });
+    if (error?.name === 'ZodError') {
+      return res.status(400).json({ error: 'Invalid policy dry-run request', details: error.issues });
+    }
+    res.status(502).json({ error: error.message || 'Policy dry-run failed' });
   }
 });
 
@@ -132,7 +145,8 @@ apiRouter.post('/chat', authenticate, async (req, res) => {
     res.json({ reply });
   } catch (error: any) {
     console.error("Chat error:", error.message);
-    res.status(500).json({ error: 'Failed to generate response', details: error.message });
+    const status = error.message?.includes('GEMINI_API_KEY') || error.message?.includes('AI explanation is unavailable') ? 503 : 500;
+    res.status(status).json({ error: status === 503 ? error.message : 'Failed to generate response', details: error.message });
   }
 });
 
@@ -144,7 +158,8 @@ apiRouter.post('/explain', authenticate, async (req, res) => {
     res.json({ explanation });
   } catch (error: any) {
     console.error('[API] Explain error:', error.message);
-    res.status(500).json({ error: 'Failed to generate explanation', details: error.message });
+    const status = error.message?.includes('GEMINI_API_KEY') || error.message?.includes('AI explanation is unavailable') ? 503 : 500;
+    res.status(status).json({ error: status === 503 ? error.message : 'Failed to generate explanation', details: error.message });
   }
 });
 
@@ -156,7 +171,8 @@ apiRouter.post('/policy/analyze', requireAdmin, async (req, res) => {
     res.json(analysis);
   } catch (error: any) {
     console.error('[API] Policy analysis error:', error.message);
-    res.status(500).json({ error: 'Failed to analyze policy' });
+    const status = error.message?.includes('GEMINI_API_KEY') || error.message?.includes('AI policy analysis is unavailable') ? 503 : 500;
+    res.status(status).json({ error: status === 503 ? error.message : 'Failed to analyze policy', details: error.message });
   }
 });
 

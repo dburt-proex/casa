@@ -6,8 +6,24 @@ import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import Markdown from 'react-markdown';
 import { useAuth } from '../../contexts/AuthContext';
 
+const POLICY_CANDIDATES = {
+  'POL-102': {
+    label: 'POL-102: Data Egress Boundary',
+    candidatePath: 'policy-candidates/POL-102-data-egress-boundary.json',
+  },
+  'POL-105': {
+    label: 'POL-105: Rate Limit Override',
+    candidatePath: 'policy-candidates/POL-105-rate-limit-override.json',
+  },
+} as const;
+
+type PolicyId = keyof typeof POLICY_CANDIDATES;
+type Environment = 'staging' | 'production';
+
 export function PolicyLab() {
   const { isAdmin } = useAuth();
+  const [selectedPolicyId, setSelectedPolicyId] = useState<PolicyId>('POL-102');
+  const [environment, setEnvironment] = useState<Environment>('staging');
   const [isSimulating, setIsSimulating] = useState(false);
   const [result, setResult] = useState<DryRunResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,8 +38,11 @@ export function PolicyLab() {
     setAnalysis(null);
     try {
       const data = await api.post<DryRunResult>('/policy/dryrun', {
-        policyId: 'POL-102',
-        parameters: { threshold: 0.8 }
+        policyId: selectedPolicyId,
+        environment,
+        parameters: {
+          policy_candidate_path: POLICY_CANDIDATES[selectedPolicyId].candidatePath,
+        }
       });
       setResult(data);
     } catch (err: any) {
@@ -38,7 +57,7 @@ export function PolicyLab() {
     setIsAnalyzing(true);
     try {
       const data = await api.post<any>('/policy/analyze', {
-        policyId: 'POL-102',
+        policyId: selectedPolicyId,
         dryRunResult: result
       });
       setAnalysis(data);
@@ -69,26 +88,52 @@ export function PolicyLab() {
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-medium text-gray-200">Policy Simulation Lab</h3>
           <span className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-xs font-mono">
-            SAFE MODE
+            DRY RUN ONLY
           </span>
         </div>
         
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div className="space-y-2">
             <label className="text-xs font-mono text-gray-500 uppercase">Target Policy</label>
-            <select className="w-full bg-[#1a1a24] border border-gray-700/50 rounded-lg px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500/50">
-              <option>POL-102: Data Egress Boundary</option>
-              <option>POL-105: Rate Limit Override</option>
+            <select
+              aria-label="Target Policy"
+              value={selectedPolicyId}
+              onChange={(event) => {
+                setSelectedPolicyId(event.target.value as PolicyId);
+                setResult(null);
+                setAnalysis(null);
+                setError(null);
+              }}
+              className="w-full bg-[#1a1a24] border border-gray-700/50 rounded-lg px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500/50"
+            >
+              {Object.entries(POLICY_CANDIDATES).map(([id, policy]) => (
+                <option key={id} value={id}>{policy.label}</option>
+              ))}
             </select>
           </div>
           <div className="space-y-2">
             <label className="text-xs font-mono text-gray-500 uppercase">Environment</label>
-            <select className="w-full bg-[#1a1a24] border border-gray-700/50 rounded-lg px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500/50">
-              <option>Staging (Shadow Mode)</option>
-              <option>Production (Dry Run)</option>
+            <select
+              aria-label="Environment"
+              value={environment}
+              onChange={(event) => {
+                setEnvironment(event.target.value as Environment);
+                setResult(null);
+                setAnalysis(null);
+                setError(null);
+              }}
+              className="w-full bg-[#1a1a24] border border-gray-700/50 rounded-lg px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500/50"
+            >
+              <option value="staging">Staging (Shadow Mode)</option>
+              <option value="production">Production (Dry Run)</option>
             </select>
           </div>
         </div>
+        {!isAdmin && (
+          <div className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            Policy simulations are admin-only. Ask an admin to run this dry-run for production evidence.
+          </div>
+        )}
         
         <button 
           onClick={runDryRun}
@@ -118,21 +163,29 @@ export function PolicyLab() {
               <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               Simulation Results
             </h4>
-            <div className="text-xs font-mono text-gray-500">ID: SIM-{Math.random().toString(36).substring(7).toUpperCase()}</div>
+              <div className="text-xs font-mono text-gray-500">ID: SIM-{Math.random().toString(36).substring(7).toUpperCase()}</div>
           </div>
           
           <div className="grid grid-cols-3 gap-4">
             <div className="p-4 bg-[#0a0a0c] rounded-lg border border-gray-800/60">
-              <div className="text-xs text-gray-500 font-mono mb-1">OUTCOME</div>
-              <div className="text-lg font-medium text-emerald-400 capitalize">{result.simulatedOutcome}</div>
+              <div className="text-xs text-gray-500 font-mono mb-1">DECISIONS ANALYZED</div>
+              <div className="text-lg font-medium text-emerald-400">{result.decisionsAnalyzed ?? 0}</div>
             </div>
             <div className="p-4 bg-[#0a0a0c] rounded-lg border border-gray-800/60">
-              <div className="text-xs text-gray-500 font-mono mb-1">IMPACT SCORE</div>
-              <div className="text-lg font-medium text-gray-200">{result.impactScore} / 100</div>
+              <div className="text-xs text-gray-500 font-mono mb-1">WOULD CHANGE</div>
+              <div className="text-lg font-medium text-gray-200">{result.decisionsThatChange ?? 0}</div>
             </div>
             <div className="p-4 bg-[#0a0a0c] rounded-lg border border-gray-800/60">
-              <div className="text-xs text-gray-500 font-mono mb-1">STATUS</div>
-              <div className="text-lg font-medium text-blue-400 capitalize">{result.status}</div>
+              <div className="text-xs text-gray-500 font-mono mb-1">CONFIDENCE</div>
+              <div className="text-lg font-medium text-blue-400">{result.confidence ?? result.impactScore}%</div>
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-[#0a0a0c] border border-gray-800/60 p-4">
+            <div className="text-xs text-gray-500 font-mono mb-2">SIMULATION SUMMARY</div>
+            <div className="text-sm text-gray-300">{result.recommendation || result.simulatedOutcome}</div>
+            <div className="mt-2 text-xs text-gray-500">
+              {result.candidatePolicyPath || POLICY_CANDIDATES[selectedPolicyId].candidatePath} - {result.environment || environment} dry run
             </div>
           </div>
 
@@ -192,10 +245,11 @@ export function PolicyLab() {
             </button>
             <button 
               onClick={() => setIsConfirmOpen(true)}
-              disabled={!isAdmin}
-              className="px-6 py-2.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled
+              title="Production policy mutation is disabled until the governance API exposes an audited apply endpoint."
+              className="px-6 py-2.5 bg-gray-800/60 text-gray-500 border border-gray-700/40 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Apply to Production
+              Apply Unavailable
             </button>
           </div>
         </div>

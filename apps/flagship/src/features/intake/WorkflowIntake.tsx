@@ -2,12 +2,20 @@ import React, { useMemo, useState } from 'react';
 import { ShieldCheck, AlertTriangle, Ban, ClipboardList, ExternalLink } from 'lucide-react';
 import { api } from '../../lib/api';
 import { cn } from '../../lib/utils';
+import { ExplainButton } from '../../components/ExplainButton';
 
 type EvaluationResult = {
+  decisionId?: string;
   agent: string;
   action: string;
   risk: string;
   decision: 'ALLOW' | 'REVIEW' | 'HALT' | string;
+  reason?: string;
+  reasonCode?: string;
+  policyResult?: 'ALLOW' | 'REVIEW' | 'FORBIDDEN' | string;
+  riskFactors?: string[];
+  signalsUsed?: Record<string, unknown>;
+  recommendedNextStep?: string;
 };
 
 type FormState = {
@@ -108,7 +116,7 @@ export function WorkflowIntake() {
           </p>
         </div>
         <div className="text-xs font-mono text-blue-300 border border-blue-500/20 bg-blue-500/10 rounded-lg px-3 py-2">
-          Demo-live prototype • evidence-backed routing
+          Demo-live prototype - evidence-backed routing
         </div>
       </div>
 
@@ -195,6 +203,57 @@ export function WorkflowIntake() {
             )}
           </div>
 
+          {result && (
+            <div className="p-6 rounded-xl bg-[#12121a] border border-gray-800/60 shadow-lg space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-medium text-gray-300">Why CASA Decided This</h3>
+                <ExplainButton
+                  context="Client-facing explanation for CASA workflow decision"
+                  data={{
+                    decision: result.decision,
+                    risk: result.risk,
+                    policyResult: result.policyResult,
+                    reason: result.reason,
+                    reasonCode: result.reasonCode,
+                    riskFactors: result.riskFactors,
+                    recommendedNextStep: result.recommendedNextStep,
+                    workflow: {
+                      companyName: form.companyName,
+                      industry: form.industry,
+                      workflowName: form.workflowName,
+                    },
+                  }}
+                />
+              </div>
+              <div className="rounded-lg bg-[#0a0a0c] border border-gray-800/60 p-4 space-y-3">
+                <div className="text-sm text-gray-200">{result.reason || 'CASA returned a decision without a reason payload.'}</div>
+                <div className="grid grid-cols-2 gap-3 text-xs font-mono text-gray-400">
+                  <div><span className="text-gray-500">Reason Code</span><br />{result.reasonCode || 'unknown'}</div>
+                  <div><span className="text-gray-500">Policy Result</span><br />{result.policyResult || 'unknown'}</div>
+                </div>
+                {result.riskFactors?.length ? (
+                  <div className="border-t border-gray-800 pt-3">
+                    <div className="text-xs font-mono text-gray-500 uppercase mb-2">Risk Factors</div>
+                    <ul className="space-y-1 text-xs text-gray-300">
+                      {result.riskFactors.map((factor) => (
+                        <li key={factor} className="flex gap-2">
+                          <span className="text-blue-400">-</span>
+                          <span>{factor}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {result.recommendedNextStep && (
+                  <div className="border-t border-gray-800 pt-3 text-xs text-gray-300">
+                    <span className="font-mono text-gray-500 uppercase">Next Step</span><br />
+                    {result.recommendedNextStep}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="p-6 rounded-xl bg-[#12121a] border border-gray-800/60 shadow-lg space-y-4">
             <h3 className="text-sm font-medium text-gray-300">Evidence Snapshot</h3>
             <div className="text-xs text-gray-400 space-y-2">
@@ -210,7 +269,7 @@ export function WorkflowIntake() {
 
           <div className="p-6 rounded-xl bg-blue-500/10 border border-blue-500/20 shadow-lg space-y-3">
             <h3 className="text-sm font-medium text-blue-200">Next Step</h3>
-            <p className="text-xs text-gray-300">Use this result to scope a 7–14 day CASA Governance Sprint: map one workflow, insert ALLOW / REVIEW / HALT control, and produce decision evidence.</p>
+            <p className="text-xs text-gray-300">Use this result to scope a 7-14 day CASA Governance Sprint: map one workflow, insert ALLOW / REVIEW / HALT control, and produce decision evidence.</p>
             <button className="w-full px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium">Request Governance Sprint</button>
           </div>
         </div>

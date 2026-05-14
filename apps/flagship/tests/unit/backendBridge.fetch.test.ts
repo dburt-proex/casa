@@ -78,7 +78,7 @@ describe('fetchWithTimeout — non-OK HTTP status', () => {
   it('throws Backend Bridge Error on a 401 response', async () => {
     mockFetchResponse({ ok: false, status: 401, statusText: 'Unauthorized' });
     await expect(
-      backendBridge.runDryRun({ policyId: 'P', parameters: {}, environment: 'staging' })
+      backendBridge.runDryRun({ policyId: 'P', parameters: { policy_candidate_path: 'policy-candidates/P.json' }, environment: 'staging' })
     ).rejects.toThrow('Backend Bridge Error: 401 Unauthorized');
   });
 });

@@ -15,4 +15,12 @@ export interface DryRunResult {
   simulatedOutcome: string;
   impactScore: number;
   logs: string[];
+  decisionsAnalyzed?: number;
+  decisionsThatChange?: number;
+  routingChanges?: Record<string, number>;
+  conflicts?: unknown[];
+  confidence?: number;
+  recommendation?: string;
+  environment?: 'staging' | 'production';
+  candidatePolicyPath?: string;
 }

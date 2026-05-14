@@ -10,6 +10,7 @@ from casa.risk_engine import classify_risk
 from casa.gate_engine import gate_decision
 from casa.policy_loader import load_policy, check_policy
 from casa.ledger import log_event
+from casa.decision_reasoning import explain_gate_decision
 
 from casa.policy_simulator import PolicySimulator
 from casa.audit_ledger import read_ledger
@@ -64,6 +65,7 @@ class GovernanceRequest(BaseModel):
 
 class PolicyDryRunRequest(BaseModel):
     policy_candidate_path: str
+    environment: str = "staging"
 
 
 class ReviewDecisionRequest(BaseModel):
@@ -78,21 +80,41 @@ def evaluate_governance(request: GovernanceRequest):
     risk = classify_risk(request.action, signals_context=request.signals)
     policy_result = check_policy(request.agent, request.action, policy=policy)
     decision = gate_decision(policy_result, risk)
+    explanation = explain_gate_decision(
+        request.agent,
+        request.action,
+        risk,
+        policy_result,
+        decision,
+        request.signals,
+    )
 
-    log_event(
+    ledger_entry = log_event(
         request.agent,
         request.action,
         risk,
         decision,
         signals=request.signals,
-        policy_version=policy.get("version", "unknown")
+        policy_version=policy.get("version", "unknown"),
+        policy_result=explanation["policy_result"],
+        reason=explanation["reason"],
+        reason_code=explanation["reason_code"],
+        risk_factors=explanation["risk_factors"],
+        recommended_next_step=explanation["recommended_next_step"],
     )
 
     return {
         "agent": request.agent,
         "action": request.action,
+        "decisionId": ledger_entry.get("decision_id"),
         "risk": risk,
-        "decision": decision
+        "decision": decision,
+        "reason": explanation["reason"],
+        "reasonCode": explanation["reason_code"],
+        "policyResult": explanation["policy_result"],
+        "riskFactors": explanation["risk_factors"],
+        "signalsUsed": explanation["signals_used"],
+        "recommendedNextStep": explanation["recommended_next_step"],
     }
 
 
@@ -123,18 +145,20 @@ def policy_dryrun(request: PolicyDryRunRequest):
     try:
         ledger_entries = read_ledger()
     except FileNotFoundError:
-        return {
-            "decisions_analyzed": 0,
-            "decisions_that_change": 0,
-            "routing_changes": 0,
-            "conflicts": [],
-            "risk_indicators": [],
-            "confidence": 0.0,
-            "recommendation": "NO_DATA"
-        }
+        ledger_entries = []
 
     simulator = PolicySimulator(candidate_policy, ledger_entries)
-    return simulator.simulate()
+    report = simulator.simulate()
+    report["candidate_policy_path"] = policy_candidate_path.relative_to(APP_ROOT).as_posix()
+    report["environment"] = request.environment
+    report["logs"] = [
+        f"Candidate: {report['candidate_policy_path']}",
+        f"Environment: {request.environment} dry run",
+        f"Decisions analyzed: {report.get('decisions_analyzed', 0)}",
+        f"Decisions that would change: {report.get('decisions_that_change', 0)}",
+        f"Recommendation: {report.get('recommendation', 'UNKNOWN')}",
+    ]
+    return report
 
 
 @app.get("/decisions/flagged")
@@ -165,7 +189,10 @@ def list_flagged_decisions():
                     "risk": entry.get("risk"),
                     "policy_version": entry.get("policy_version"),
                     "signals": entry.get("signals", {}),
-                    "reason": "Decision requires human review"
+                    "reason": entry.get("reason", "Decision requires human review"),
+                    "reason_code": entry.get("reason_code"),
+                    "risk_factors": entry.get("risk_factors", []),
+                    "recommended_next_step": entry.get("recommended_next_step"),
                 })
 
     return flagged

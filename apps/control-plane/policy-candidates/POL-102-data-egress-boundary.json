@@ -1,0 +1,28 @@
+{
+  "version": "candidate-POL-102",
+  "agents": {
+    "agent_01": [
+      "read_database",
+      "write_database"
+    ],
+    "analytics_agent": [
+      "read_database"
+    ],
+    "admin_agent": [
+      "read_database",
+      "write_database",
+      "delete_database"
+    ],
+    "demo-agent": [
+      "summarize public support ticket"
+    ]
+  },
+  "review": [
+    "write_database"
+  ],
+  "forbidden": [
+    "delete_database",
+    "delete customer records",
+    "send customer-facing email"
+  ]
+}

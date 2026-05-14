@@ -44,11 +44,18 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutM
       throw new Error(`Backend Bridge Error: Response payload too large (${contentLength} bytes)`);
     }
 
-    if (!response.ok) {
-      throw new Error(`Backend Bridge Error: ${response.status} ${response.statusText}`);
-    }
-    
     const text = await response.text();
+    if (!response.ok) {
+      let detail = text;
+      try {
+        const parsed = JSON.parse(text);
+        detail = parsed.detail || parsed.error || parsed.message || text;
+      } catch {
+        // Keep plain text response detail.
+      }
+      throw new Error(`Backend Bridge Error: ${response.status} ${response.statusText}${detail ? ` - ${detail}` : ''}`);
+    }
+
     if (text.length > 5 * 1024 * 1024) {
       throw new Error(`Backend Bridge Error: Response payload too large (${text.length} characters)`);
     }
@@ -104,12 +111,22 @@ function normalizePolicyDryRun(raw: JsonRecord): z.infer<typeof PolicyDryRunResp
   const conflicts = Array.isArray(raw.conflicts) ? raw.conflicts : [];
   const indicators = Array.isArray(raw.risk_indicators) ? raw.risk_indicators : [];
   const logs = Array.isArray(raw.logs) ? raw.logs : [...conflicts, ...indicators].map((item) => typeof item === 'string' ? item : JSON.stringify(item));
+  const decisionsThatChange = Number(raw.decisions_that_change ?? raw.decisionsThatChange ?? 0);
+  const recommendation = raw.recommendation ? String(raw.recommendation) : undefined;
 
   return PolicyDryRunResponseSchema.parse({
     status: String(raw.status || raw.recommendation || 'SIMULATED'),
-    simulatedOutcome: String(raw.simulatedOutcome || `${raw.decisions_that_change ?? 0} decisions would change under candidate policy.`),
-    impactScore: Number(raw.impactScore ?? raw.routing_changes ?? raw.decisions_that_change ?? 0),
-    logs
+    simulatedOutcome: String(raw.simulatedOutcome || `${decisionsThatChange} decisions would change under candidate policy.`),
+    impactScore: Number(raw.impactScore ?? raw.confidence ?? decisionsThatChange),
+    logs,
+    decisionsAnalyzed: Number(raw.decisions_analyzed ?? raw.decisionsAnalyzed ?? 0),
+    decisionsThatChange,
+    routingChanges: raw.routing_changes || raw.routingChanges || {},
+    conflicts,
+    confidence: Number(raw.confidence ?? 0),
+    recommendation,
+    environment: raw.environment === 'production' ? 'production' : 'staging',
+    candidatePolicyPath: raw.candidate_policy_path || raw.candidatePolicyPath,
   });
 }
 
@@ -159,7 +176,10 @@ export const backendBridge = {
 
   async runDryRun(payload: z.infer<typeof PolicyDryRunRequestSchema>, requestId?: string): Promise<z.infer<typeof PolicyDryRunResponseSchema>> {
     const parsed = PolicyDryRunRequestSchema.parse(payload);
-    const candidatePath = parsed.parameters?.policy_candidate_path || parsed.parameters?.policyCandidatePath || 'policy.json';
+    const candidatePath = parsed.parameters?.policy_candidate_path || parsed.parameters?.policyCandidatePath;
+    if (!candidatePath) {
+      throw new Error(`No policy candidate path configured for ${parsed.policyId}`);
+    }
     const headers = {
       'Content-Type': 'application/json',
       ...(requestId ? { 'X-Request-ID': requestId } : {})
@@ -168,7 +188,8 @@ export const backendBridge = {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        policy_candidate_path: candidatePath
+        policy_candidate_path: candidatePath,
+        environment: parsed.environment
       })
     });
     return normalizePolicyDryRun(data);

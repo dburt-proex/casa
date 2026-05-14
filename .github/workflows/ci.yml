@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/flagship/package-lock.json
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install backend dependencies
+        working-directory: apps/control-plane
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Install Flagship dependencies
+        working-directory: apps/flagship
+        run: npm ci
+
+      - name: Secret and generated file scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! git ls-files | grep -E '(^|/)(node_modules|dist|\.venv|\.tools|__pycache__)(/|$)'
+          ! git ls-files | grep -E '(^|/)(ledger\.log|\.env|\.env\.local)$'
+          ! git grep -nE '(sk_live_|sk_test_|rnd_[A-Za-z0-9]{16,}|AIza[0-9A-Za-z_-]{20,})'
+
+      - name: Backend tests
+        working-directory: apps/control-plane
+        run: python -m pytest
+
+      - name: Flagship typecheck
+        working-directory: apps/flagship
+        run: npm run lint
+
+      - name: Flagship unit tests
+        working-directory: apps/flagship
+        run: npm test
+
+      - name: Flagship production build
+        working-directory: apps/flagship
+        run: npm run build
+
+      - name: Install Playwright browser
+        working-directory: apps/flagship
+        run: |
+          npm install --no-save @playwright/test
+          npx playwright install --with-deps chromium
+
+      - name: Start governance API
+        working-directory: apps/control-plane
+        run: |
+          nohup python -m uvicorn governance_api:app --host 127.0.0.1 --port 5000 > /tmp/casa-governance-api.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:5000/health && exit 0
+            sleep 1
+          done
+          cat /tmp/casa-governance-api.log
+          exit 1
+
+      - name: Browser smoke tests
+        working-directory: apps/flagship
+        run: npm run test:smoke

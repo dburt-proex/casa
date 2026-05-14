@@ -28,6 +28,14 @@ export const PolicyDryRunResponseSchema = z.object({
   simulatedOutcome: z.string().max(500),
   impactScore: z.number(),
   logs: z.array(z.string().max(1000)),
+  decisionsAnalyzed: z.number().optional(),
+  decisionsThatChange: z.number().optional(),
+  routingChanges: z.record(z.string(), z.number()).optional(),
+  conflicts: z.array(z.any()).optional(),
+  confidence: z.number().optional(),
+  recommendation: z.string().optional(),
+  environment: z.enum(['staging', 'production']).optional(),
+  candidatePolicyPath: z.string().optional(),
 });
 
 export const DecisionReplaySchema = z.object({
