@@ -9,8 +9,8 @@
   "scripts": {
     "dev": "tsx server.ts",
     "start": "node dist/server/server.js",
-    "build": "vite build && tsc server.ts --outDir dist/server --esModuleInterop --skipLibCheck --module NodeNext --moduleResolution NodeNext",
-    "build:server": "tsc server.ts --outDir dist/server --esModuleInterop --skipLibCheck --module NodeNext --moduleResolution NodeNext",
+    "build": "vite build && tsc -p tsconfig.server.json",
+    "build:server": "tsc -p tsconfig.server.json",
     "preview": "vite preview",
     "clean": "node -e \"import('node:fs').then(fs => fs.rmSync('dist', { recursive: true, force: true }))\"",
     "lint": "tsc --noEmit",
