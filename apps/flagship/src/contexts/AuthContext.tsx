@@ -23,6 +23,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clerkUser = useUser();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const clerkEmail = clerkUser.user?.primaryEmailAddress?.emailAddress || clerkUser.user?.username || clerkUser.user?.id;
+  const clerkRole = clerkUser.user?.publicMetadata?.role === 'admin' ? 'admin' : 'operator';
 
   useEffect(() => {
     if (clerkConfigured) return;
@@ -51,20 +53,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [clerkConfigured]);
 
   useEffect(() => {
-    if (!clerkConfigured || !clerkAuth.isSignedIn || !clerkUser.user) return;
+    if (!clerkConfigured || !clerkAuth.isLoaded) return;
+
+    if (!clerkAuth.isSignedIn || !clerkUser.user) {
+      setToken(null);
+      setUser(null);
+      return;
+    }
 
     const syncClerkSession = async () => {
       const clerkToken = await clerkAuth.getToken();
       if (!clerkToken) return;
 
-      const role = clerkUser.user.publicMetadata?.role === 'admin' ? 'admin' : 'operator';
-      const email = clerkUser.user.primaryEmailAddress?.emailAddress || clerkUser.user.username || clerkUser.user.id;
-      setToken(clerkToken);
-      setUser({ email, role });
+      setToken((current) => current === clerkToken ? current : clerkToken);
+      setUser((current) => {
+        const nextUser = { email: clerkEmail || clerkUser.user!.id, role: clerkRole };
+        if (current?.email === nextUser.email && current.role === nextUser.role) return current;
+        return nextUser;
+      });
     };
 
     void syncClerkSession();
-  }, [clerkAuth, clerkConfigured, clerkUser.user]);
+  }, [
+    clerkAuth.getToken,
+    clerkAuth.isLoaded,
+    clerkAuth.isSignedIn,
+    clerkConfigured,
+    clerkEmail,
+    clerkRole,
+    clerkUser.user?.id
+  ]);
 
   const login = async (role: string = 'operator') => {
     if (clerkConfigured) return;

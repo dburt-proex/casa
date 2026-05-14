@@ -27,7 +27,6 @@ export const api = {
       if (res.status === 401) {
         localStorage.removeItem('casa_token');
         localStorage.removeItem('casa_user');
-        window.location.reload();
       }
       const errorData = await res.json().catch(() => ({}));
       throw new Error(errorData.message || errorData.error || `API Error: ${res.statusText}`);
@@ -51,7 +50,6 @@ export const api = {
       if (res.status === 401) {
         localStorage.removeItem('casa_token');
         localStorage.removeItem('casa_user');
-        window.location.reload();
       }
       const errorData = await res.json().catch(() => ({}));
       throw new Error(errorData.message || errorData.error || `API Error: ${res.statusText}`);
