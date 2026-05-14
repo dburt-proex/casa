@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -40,7 +43,7 @@ jobs:
           set -euo pipefail
           ! git ls-files | grep -E '(^|/)(node_modules|dist|\.venv|\.tools|__pycache__)(/|$)'
           ! git ls-files | grep -E '(^|/)(ledger\.log|\.env|\.env\.local)$'
-          ! git grep -nE '(sk_live_|sk_test_|rnd_[A-Za-z0-9]{16,}|AIza[0-9A-Za-z_-]{20,})'
+          ! git grep -nE '(sk_live_|sk_test_|rnd_[A-Za-z0-9]{16,}|AIza[0-9A-Za-z_-]{20,})' -- . ':!.github/workflows/ci.yml'
 
       - name: Backend tests
         working-directory: apps/control-plane
