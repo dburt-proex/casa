@@ -2,6 +2,7 @@ services:
   - type: web
     name: casa-governance-api
     runtime: python
+    plan: starter
     rootDir: apps/control-plane
     buildCommand: pip install -r requirements.txt
     startCommand: python -m uvicorn governance_api:app --host 0.0.0.0 --port $PORT
@@ -19,6 +20,7 @@ services:
   - type: web
     name: casa-flagship
     runtime: node
+    plan: starter
     rootDir: apps/flagship
     buildCommand: npm ci && npm run build
     startCommand: npm start
