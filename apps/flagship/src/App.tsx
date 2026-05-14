@@ -17,6 +17,7 @@ export default function App() {
   const { isAuthenticated, login, logout } = useAuth();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const clerkEnabled = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  const devLoginEnabled = import.meta.env.DEV;
 
   if (!isAuthenticated) {
     return (
@@ -45,11 +46,15 @@ export default function App() {
                   </div>
                 </Show>
               </>
-            ) : (
+            ) : devLoginEnabled ? (
               <>
                 <button onClick={async () => { setIsLoggingIn(true); await login('operator'); setIsLoggingIn(false); }} disabled={isLoggingIn} className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium disabled:opacity-50">Login as Operator</button>
                 <button onClick={async () => { setIsLoggingIn(true); await login('admin'); setIsLoggingIn(false); }} disabled={isLoggingIn} className="w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg font-medium disabled:opacity-50">Login as Admin</button>
               </>
+            ) : (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                Authentication configuration required.
+              </div>
             )}
           </div>
         </div>
