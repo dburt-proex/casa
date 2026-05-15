@@ -15,7 +15,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const { isAuthenticated, login, logout } = useAuth();
+  const { isAuthenticated, login, logout, user, isAdmin } = useAuth();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const clerkEnabled = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
   const devLoginEnabled = import.meta.env.DEV;
@@ -24,7 +24,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#0a0a0c] flex items-center justify-center text-gray-300 font-sans">
         <div className="w-full max-w-md p-8 bg-[#0d0d12] border border-gray-800/60 rounded-xl shadow-2xl">
-          <div className="flex items-center justify-center gap-3 text-blue-400 font-semibold tracking-wide mb-8">
+          <div className="flex items-center justify-center gap-3 text-emerald-400 font-semibold tracking-wide mb-8">
             <Shield className="w-8 h-8" />
             <span className="text-xl">CASA CONTROL</span>
           </div>
@@ -35,7 +35,7 @@ export default function App() {
               <>
                 <Show when="signed-out">
                   <SignInButton mode="modal">
-                    <button className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium">Sign in</button>
+                    <button className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium">Sign in</button>
                   </SignInButton>
                   <SignUpButton mode="modal">
                     <button className="w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg font-medium">Create account</button>
@@ -49,7 +49,7 @@ export default function App() {
               </>
             ) : devLoginEnabled ? (
               <>
-                <button onClick={async () => { setIsLoggingIn(true); await login('operator'); setIsLoggingIn(false); }} disabled={isLoggingIn} className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium disabled:opacity-50">Login as Operator</button>
+                <button onClick={async () => { setIsLoggingIn(true); await login('operator'); setIsLoggingIn(false); }} disabled={isLoggingIn} className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium disabled:opacity-50">Login as Operator</button>
                 <button onClick={async () => { setIsLoggingIn(true); await login('admin'); setIsLoggingIn(false); }} disabled={isLoggingIn} className="w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg font-medium disabled:opacity-50">Login as Admin</button>
               </>
             ) : (
@@ -65,7 +65,7 @@ export default function App() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'intake': return <WorkflowIntake />;
+      case 'intake': return <WorkflowIntake onOpenReviewGate={() => setActiveTab('review')} />;
       case 'dashboard': return <Dashboard />;
       case 'review': return <ReviewGate />;
       case 'dry-run': return <PolicyLab />;
@@ -81,11 +81,23 @@ export default function App() {
     <div className="min-h-screen bg-[#0a0a0c] text-gray-300 font-sans flex">
       <aside className="w-64 border-r border-gray-800/60 bg-[#0d0d12] flex flex-col z-10">
         <div className="p-6 border-b border-gray-800/60">
-          <div className="flex items-center gap-3 text-blue-400 font-semibold tracking-wide">
+          <div className="flex items-center gap-3 text-emerald-400 font-semibold tracking-wide">
             <Shield className="w-6 h-6" />
             <span>CASA CONTROL</span>
           </div>
           <div className="mt-2 text-xs text-gray-500 font-mono">v2.0.0-rc2</div>
+          <div className="mt-4 rounded-lg border border-gray-800 bg-[#0a0a0c] px-3 py-2">
+            <div className="text-[10px] uppercase tracking-wide text-gray-500">Signed in as</div>
+            <div className="mt-1 flex items-center justify-between gap-2">
+              <span className="truncate text-xs text-gray-300">{user?.email || 'authenticated user'}</span>
+              <span className={cn(
+                "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                isAdmin ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300"
+              )}>
+                {isAdmin ? 'Admin' : 'Operator'}
+              </span>
+            </div>
+          </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -99,7 +111,7 @@ export default function App() {
             { id: 'chat', icon: MessageSquare, label: 'Operator Chat' },
             { id: 'ops', icon: Terminal, label: 'Ops Metrics' },
           ].map((item) => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)} className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium", activeTab === item.id ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "text-gray-400 hover:bg-gray-800/50 hover:text-gray-200")}>
+            <button key={item.id} onClick={() => setActiveTab(item.id)} className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium", activeTab === item.id ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20" : "text-gray-400 hover:bg-gray-800/50 hover:text-gray-200")}>
               <item.icon className="w-4 h-4" />
               {item.label}
             </button>

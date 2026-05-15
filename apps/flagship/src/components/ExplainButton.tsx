@@ -35,7 +35,7 @@ export function ExplainButton({ context, data, className = '' }: ExplainButtonPr
     <>
       <button
         onClick={handleExplain}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded border border-blue-500/20 transition-colors ${className}`}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 rounded border border-emerald-500/20 transition-colors ${className}`}
       >
         <Sparkles className="w-3.5 h-3.5" />
         Explain this
@@ -45,7 +45,7 @@ export function ExplainButton({ context, data, className = '' }: ExplainButtonPr
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-lg bg-[#12121a] border border-gray-800 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-[#0d0d12]">
-              <div className="flex items-center gap-2 text-blue-400">
+              <div className="flex items-center gap-2 text-emerald-300">
                 <Sparkles className="w-4 h-4" />
                 <h3 className="font-medium text-sm">AI Explanation</h3>
               </div>
@@ -61,9 +61,9 @@ export function ExplainButton({ context, data, className = '' }: ExplainButtonPr
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-8 space-y-3">
                   <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                   <p className="text-gray-500 animate-pulse">Analyzing context...</p>
                 </div>

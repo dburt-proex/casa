@@ -33,8 +33,18 @@ apiRouter.use((req, res, next) => {
   next();
 });
 
-apiRouter.get("/ops/metrics", (req, res) => {
+apiRouter.get("/ops/metrics", authenticate, (req, res) => {
   res.json(opsMetrics.getMetrics());
+});
+
+apiRouter.get('/me', authenticate, (req, res) => {
+  const user = (req as any).user;
+  res.json({
+    sub: user.sub,
+    email: user.email,
+    role: user.role,
+    provider: user.provider,
+  });
 });
 
 apiRouter.get("/config/status", authenticate, (_req, res) => {
@@ -89,7 +99,7 @@ apiRouter.post('/auth/dev-login', async (req, res) => {
   }
 });
 
-apiRouter.post('/evaluate', async (req, res) => {
+apiRouter.post('/evaluate', authenticate, async (req, res) => {
   try {
     const result = await backendBridge.evaluateAction(req.body, req.headers['x-request-id'] as string);
     res.json(result);
@@ -98,7 +108,7 @@ apiRouter.post('/evaluate', async (req, res) => {
   }
 });
 
-apiRouter.get('/dashboard', async (req, res) => {
+apiRouter.get('/dashboard', authenticate, async (req, res) => {
   try {
     const data = await backendBridge.getDashboard(req.headers['x-request-id'] as string);
     res.json(data);
@@ -107,7 +117,7 @@ apiRouter.get('/dashboard', async (req, res) => {
   }
 });
 
-apiRouter.get('/stress', async (req, res) => {
+apiRouter.get('/stress', authenticate, async (req, res) => {
   try {
     const data = await backendBridge.getBoundaryStress(req.headers['x-request-id'] as string);
     res.json(data);
@@ -116,7 +126,7 @@ apiRouter.get('/stress', async (req, res) => {
   }
 });
 
-apiRouter.get('/replay/:id', async (req, res) => {
+apiRouter.get('/replay/:id', authenticate, async (req, res) => {
   try {
     const data = await backendBridge.replayDecision(req.params.id, req.headers['x-request-id'] as string);
     res.json(data);
@@ -176,28 +186,42 @@ apiRouter.post('/policy/analyze', requireAdmin, async (req, res) => {
   }
 });
 
-const MOCK_DECISIONS = [
-  { id: 'DEC-123', timestamp: '2026-04-10T14:30:00Z', agent: 'support_agent', action: 'write_database', status: 'REVIEW', liabilityGrade: 'HIGH', riskScore: 85, reason: 'Policy threshold changed after boundary stress increase.' },
-  { id: 'DEC-124', timestamp: '2026-04-11T09:15:00Z', agent: 'billing_agent', action: 'issue_refund', status: 'REVIEW', liabilityGrade: 'CRITICAL', riskScore: 92, reason: 'Refund amount exceeds standard autonomous limit.' },
-  { id: 'DEC-120', timestamp: '2026-04-09T11:20:00Z', agent: 'support_agent', action: 'read_user_profile', status: 'ALLOW', liabilityGrade: 'LOW', riskScore: 12, reason: 'Standard read operation within bounds.' },
-  { id: 'DEC-121', timestamp: '2026-04-09T16:45:00Z', agent: 'marketing_agent', action: 'send_mass_email', status: 'HALT', liabilityGrade: 'CRITICAL', riskScore: 98, reason: 'Detected potential spam pattern. Halted by POL-089.' }
-];
-
-apiRouter.get('/decisions/flagged', authenticate, (req, res) => {
-  res.json(MOCK_DECISIONS.filter(d => d.status === 'REVIEW'));
+apiRouter.get('/decisions/flagged', authenticate, async (req, res) => {
+  try {
+    const data = await backendBridge.getFlaggedDecisions(req.headers['x-request-id'] as string);
+    res.json(data);
+  } catch (error: any) {
+    res.status(502).json({ error: error.message || 'Failed to fetch flagged decisions' });
+  }
 });
 
-apiRouter.get('/decisions/history', authenticate, (req, res) => {
-  res.json(MOCK_DECISIONS.filter(d => d.status !== 'REVIEW'));
+apiRouter.get('/decisions/history', authenticate, async (req, res) => {
+  try {
+    const data = await backendBridge.getDecisionHistory(req.headers['x-request-id'] as string);
+    res.json(data);
+  } catch (error: any) {
+    res.status(502).json({ error: error.message || 'Failed to fetch decision history' });
+  }
 });
 
-apiRouter.post('/decisions/:id/review', authenticate, (req, res) => {
-  const { action } = req.body;
+apiRouter.post('/decisions/:id/review', authenticate, async (req, res) => {
+  const { action, notes = '' } = req.body;
   if (action !== 'APPROVE' && action !== 'HALT') return res.status(400).json({ error: 'Invalid action. Must be APPROVE or HALT.' });
-  const decision = MOCK_DECISIONS.find(d => d.id === req.params.id);
-  if (!decision) return res.status(404).json({ error: 'Decision not found' });
-  decision.status = action === 'APPROVE' ? 'ALLOW' : 'HALT';
-  res.json({ success: true, decision });
+
+  try {
+    const user = (req as any).user;
+    const reviewer = user?.email || user?.sub || 'operator';
+    const result = await backendBridge.reviewDecision(
+      req.params.id,
+      action,
+      reviewer,
+      notes,
+      req.headers['x-request-id'] as string
+    );
+    res.json(result);
+  } catch (error: any) {
+    res.status(502).json({ error: error.message || 'Failed to review decision' });
+  }
 });
 
 apiRouter.post('/admin/policy/apply', requireAdminConfirmation, async (req, res) => {

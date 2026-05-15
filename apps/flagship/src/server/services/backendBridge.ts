@@ -30,6 +30,15 @@ export type WorkflowEvaluationRequest = {
   signals: JsonRecord;
 };
 
+function riskToScore(risk: string): number {
+  const normalized = String(risk || '').toUpperCase();
+  if (normalized === 'LOW') return 25;
+  if (normalized === 'MEDIUM') return 50;
+  if (normalized === 'HIGH') return 75;
+  if (normalized === 'CRITICAL') return 95;
+  return 50;
+}
+
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 10000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
@@ -140,6 +149,33 @@ function normalizeDecisionReplay(raw: JsonRecord, decisionId: string): z.infer<t
   });
 }
 
+function normalizeLedgerDecision(raw: JsonRecord): JsonRecord {
+  const decisionId = String(raw.id || raw.decision_id || raw.decisionId || '');
+  const status = String(raw.status || raw.decision || 'UNKNOWN').toUpperCase();
+  const risk = String(raw.risk || raw.liabilityGrade || 'MEDIUM').toUpperCase();
+  const timestamp = String(raw.timestamp || raw.time || raw.created_at || '');
+
+  return {
+    id: decisionId,
+    decision_id: decisionId,
+    timestamp,
+    agent: String(raw.agent || 'unknown-agent'),
+    action: String(raw.action || 'unknown-action'),
+    status,
+    decision: status,
+    risk,
+    liabilityGrade: risk,
+    riskScore: Number(raw.riskScore ?? raw.risk_score ?? riskToScore(risk)),
+    policyVersion: raw.policy_version || raw.policyVersion || 'unknown',
+    policyResult: raw.policy_result || raw.policyResult || 'unknown',
+    signals: raw.signals || {},
+    reason: raw.reason || 'No deterministic reason was recorded for this decision.',
+    reasonCode: raw.reason_code || raw.reasonCode || 'unknown',
+    riskFactors: raw.risk_factors || raw.riskFactors || [],
+    recommendedNextStep: raw.recommended_next_step || raw.recommendedNextStep || '',
+  };
+}
+
 export const backendBridge = {
   async evaluateAction(payload: WorkflowEvaluationRequest, requestId?: string): Promise<JsonRecord> {
     const headers = {
@@ -199,6 +235,37 @@ export const backendBridge = {
     const headers = requestId ? { 'X-Request-ID': requestId } : {};
     const data = await fetchWithTimeout(`${BACKEND_API_URL}/decision-replay/${encodeURIComponent(decisionId)}`, { headers });
     return normalizeDecisionReplay(data, decisionId);
+  },
+
+  async getFlaggedDecisions(requestId?: string): Promise<JsonRecord[]> {
+    const headers = requestId ? { 'X-Request-ID': requestId } : {};
+    const data = await fetchWithTimeout(`${BACKEND_API_URL}/decisions/flagged`, { headers });
+    return Array.isArray(data) ? data.map(normalizeLedgerDecision) : [];
+  },
+
+  async getDecisionHistory(requestId?: string): Promise<JsonRecord[]> {
+    const headers = requestId ? { 'X-Request-ID': requestId } : {};
+    const data = await fetchWithTimeout(`${BACKEND_API_URL}/ledger`, { headers });
+    const entries = Array.isArray(data) ? data.map(normalizeLedgerDecision) : [];
+    return entries.sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+  },
+
+  async reviewDecision(
+    decisionId: string,
+    action: 'APPROVE' | 'HALT',
+    reviewer: string,
+    notes = '',
+    requestId?: string
+  ): Promise<JsonRecord> {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(requestId ? { 'X-Request-ID': requestId } : {})
+    };
+    return fetchWithTimeout(`${BACKEND_API_URL}/decisions/${encodeURIComponent(decisionId)}/review`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ action, reviewer, notes })
+    });
   },
 
   async applyPolicy(_policyId: string, _reason: string, _requestId?: string): Promise<{ success: boolean; auditId: string }> {

@@ -35,7 +35,7 @@ export function Dashboard() {
       <div className="flex justify-between items-end">
         <div>
           <h2 className="text-2xl font-semibold text-gray-100 tracking-tight">System Overview</h2>
-          <p className="text-sm text-gray-400 mt-1">Real-time governance metrics and system health</p>
+          <p className="text-sm text-gray-400 mt-1">Governance metrics from the live control-plane ledger</p>
         </div>
         <ExplainButton context="CASA System Dashboard Metrics" data={data} />
       </div>
@@ -43,7 +43,7 @@ export function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="p-6 rounded-xl bg-[#12121a] border border-gray-800/60 shadow-lg relative overflow-hidden group">
-          <div className="absolute top-4 right-4 p-2 bg-blue-500/10 rounded-lg text-blue-400">
+          <div className="absolute top-4 right-4 p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
             <FileText className="w-5 h-5" />
           </div>
           <div className="text-sm text-gray-500 font-medium mb-2">Active Policies</div>
@@ -59,9 +59,7 @@ export function Dashboard() {
           </div>
           <div className="text-sm text-gray-500 font-medium mb-2">Decisions (24h)</div>
           <div className="text-4xl font-semibold tracking-tight text-gray-100">{data.decisions24h}</div>
-          <div className="mt-4 text-xs text-gray-400 flex items-center gap-1">
-            <span className="text-emerald-400">+12%</span> from yesterday
-          </div>
+          <div className="mt-4 text-xs text-gray-400 flex items-center gap-1">Live ledger sample</div>
         </div>
 
         <div className="p-6 rounded-xl bg-[#12121a] border border-gray-800/60 shadow-lg relative overflow-hidden group">
@@ -83,9 +81,7 @@ export function Dashboard() {
           </div>
           <div className="text-sm text-gray-500 font-medium mb-2">System Status</div>
           <div className="text-2xl font-semibold tracking-tight text-emerald-400 capitalize mt-2">{data.systemStatus}</div>
-          <div className="mt-4 text-xs text-gray-400 flex items-center gap-1">
-            Latency: 42ms
-          </div>
+          <div className="mt-4 text-xs text-gray-400 flex items-center gap-1">Health endpoint responding</div>
         </div>
       </div>
 
@@ -98,8 +94,8 @@ export function Dashboard() {
               <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorDecisions" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
@@ -109,7 +105,7 @@ export function Dashboard() {
                   contentStyle={{ backgroundColor: '#0d0d12', borderColor: '#1f2937', borderRadius: '8px' }}
                   itemStyle={{ color: '#e5e7eb' }}
                 />
-                <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorDecisions)" />
+                <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorDecisions)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

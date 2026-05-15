@@ -41,7 +41,7 @@ export function BoundaryStress() {
           <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Recommendations</h4>
           <ul className="space-y-3">
             {data.recommendations.map((r: string, i: number) => (
-              <li key={i} className="text-blue-300 bg-blue-500/10 px-4 py-3 rounded-lg border border-blue-500/20 text-sm">{r}</li>
+              <li key={i} className="text-emerald-300 bg-emerald-500/10 px-4 py-3 rounded-lg border border-emerald-500/20 text-sm">{r}</li>
             ))}
           </ul>
         </div>

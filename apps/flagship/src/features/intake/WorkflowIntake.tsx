@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ShieldCheck, AlertTriangle, Ban, ClipboardList, ExternalLink } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, Ban, ClipboardList, ExternalLink, ArrowRight } from 'lucide-react';
 import { api } from '../../lib/api';
 import { cn } from '../../lib/utils';
 import { ExplainButton } from '../../components/ExplainButton';
@@ -67,7 +67,11 @@ function decisionIcon(decision?: string) {
   return <ClipboardList className="w-6 h-6" />;
 }
 
-export function WorkflowIntake() {
+type WorkflowIntakeProps = {
+  onOpenReviewGate?: () => void;
+};
+
+export function WorkflowIntake({ onOpenReviewGate }: WorkflowIntakeProps) {
   const [form, setForm] = useState<FormState>(initialForm);
   const [result, setResult] = useState<EvaluationResult | null>(null);
   const [error, setError] = useState('');
@@ -115,7 +119,7 @@ export function WorkflowIntake() {
             Enter one proposed AI workflow action. CASA evaluates the action before execution and routes it to ALLOW, REVIEW, or HALT.
           </p>
         </div>
-        <div className="text-xs font-mono text-blue-300 border border-blue-500/20 bg-blue-500/10 rounded-lg px-3 py-2">
+        <div className="text-xs font-mono text-emerald-300 border border-emerald-500/20 bg-emerald-500/10 rounded-lg px-3 py-2">
           Demo-live prototype - evidence-backed routing
         </div>
       </div>
@@ -177,7 +181,7 @@ export function WorkflowIntake() {
 
           <div className="flex items-center justify-between border-t border-gray-800 pt-5">
             <div className="text-sm text-gray-400">Computed signal risk_score: <span className="font-mono text-gray-100">{riskScore}</span></div>
-            <button onClick={runEvaluation} disabled={loading || !form.action.trim()} className="px-5 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium disabled:opacity-50">
+            <button onClick={runEvaluation} disabled={loading || !form.action.trim()} className="px-5 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-50">
               {loading ? 'Evaluating...' : 'Evaluate with CASA'}
             </button>
           </div>
@@ -199,6 +203,11 @@ export function WorkflowIntake() {
                   <div><span className="text-gray-500">Agent</span><br />{result.agent}</div>
                 </div>
                 <div className="text-xs text-gray-300 border-t border-white/10 pt-3">{result.action}</div>
+                {result.decision === 'REVIEW' && (
+                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-100">
+                    This decision has been written to the ledger and is available in Review Gate.
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -237,7 +246,7 @@ export function WorkflowIntake() {
                     <ul className="space-y-1 text-xs text-gray-300">
                       {result.riskFactors.map((factor) => (
                         <li key={factor} className="flex gap-2">
-                          <span className="text-blue-400">-</span>
+                          <span className="text-emerald-400">-</span>
                           <span>{factor}</span>
                         </li>
                       ))}
@@ -249,6 +258,16 @@ export function WorkflowIntake() {
                     <span className="font-mono text-gray-500 uppercase">Next Step</span><br />
                     {result.recommendedNextStep}
                   </div>
+                )}
+                {result.decision === 'REVIEW' && onOpenReviewGate && (
+                  <button
+                    type="button"
+                    onClick={onOpenReviewGate}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-amber-500/15 px-4 py-3 text-sm font-medium text-amber-100 border border-amber-500/25 hover:bg-amber-500/20"
+                  >
+                    Open Review Gate
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
                 )}
               </div>
             </div>
@@ -262,15 +281,15 @@ export function WorkflowIntake() {
               <div>Policy route: <span className="text-gray-200">pre-execution gate</span></div>
               <div>Ledger: <span className="text-gray-200">open Audit Ledger after evaluation</span></div>
             </div>
-            <a href="/" className="inline-flex items-center gap-2 text-xs text-blue-300 hover:text-blue-200">
+            <a href="/" className="inline-flex items-center gap-2 text-xs text-emerald-300 hover:text-emerald-200">
               Refresh dashboard after evaluation <ExternalLink className="w-3 h-3" />
             </a>
           </div>
 
-          <div className="p-6 rounded-xl bg-blue-500/10 border border-blue-500/20 shadow-lg space-y-3">
-            <h3 className="text-sm font-medium text-blue-200">Next Step</h3>
+          <div className="p-6 rounded-xl bg-emerald-500/10 border border-emerald-500/20 shadow-lg space-y-3">
+            <h3 className="text-sm font-medium text-emerald-200">Next Step</h3>
             <p className="text-xs text-gray-300">Use this result to scope a 7-14 day CASA Governance Sprint: map one workflow, insert ALLOW / REVIEW / HALT control, and produce decision evidence.</p>
-            <button className="w-full px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium">Request Governance Sprint</button>
+            <button className="w-full px-4 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">Request Governance Sprint</button>
           </div>
         </div>
       </div>

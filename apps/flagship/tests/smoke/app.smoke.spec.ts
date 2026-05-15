@@ -34,7 +34,7 @@ test('operator console handles auth, sidebar navigation, workflow intake, and po
   await page.getByLabel('Environment').selectOption('production');
   await page.getByRole('button', { name: 'Execute Simulation' }).click();
   await expect(page.getByText('Simulation Results')).toBeVisible();
-  await expect(page.getByText('Apply Unavailable')).toBeDisabled();
+  await expect(page.getByText('Approval Workflow Pending')).toBeDisabled();
 
   expect(pageErrors).toEqual([]);
 });

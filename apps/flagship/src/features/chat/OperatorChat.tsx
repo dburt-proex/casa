@@ -42,7 +42,7 @@ export function OperatorChat() {
               <div className={cn(
                 "max-w-[80%] rounded-2xl px-5 py-3 text-sm leading-relaxed",
                 msg.role === 'user' 
-                  ? "bg-blue-600/20 text-blue-100 border border-blue-500/30" 
+                  ? "bg-emerald-600/20 text-emerald-100 border border-emerald-500/30" 
                   : "bg-gray-800/40 text-gray-300 border border-gray-700/50 font-mono"
               )}>
                 {msg.text}
@@ -54,9 +54,9 @@ export function OperatorChat() {
           <div className="flex justify-start">
             <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl px-5 py-4">
               <div className="flex gap-1">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           </div>
@@ -70,12 +70,12 @@ export function OperatorChat() {
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
             placeholder="Query CASA policies, request analysis, or ask for boundary stress metrics..."
-            className="w-full bg-[#1a1a24] border border-gray-700/50 rounded-lg pl-4 pr-12 py-3 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all disabled:opacity-50"
+            className="w-full bg-[#1a1a24] border border-gray-700/50 rounded-lg pl-4 pr-12 py-3 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all disabled:opacity-50"
           />
           <button 
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-blue-400 transition-colors disabled:opacity-50"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-emerald-400 transition-colors disabled:opacity-50"
           >
             <Terminal className="w-4 h-4" />
           </button>

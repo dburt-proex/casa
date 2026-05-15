@@ -9,10 +9,12 @@ import { useAuth } from '../../contexts/AuthContext';
 const POLICY_CANDIDATES = {
   'POL-102': {
     label: 'POL-102: Data Egress Boundary',
+    description: 'Tightens customer-facing data egress so risky outbound actions halt before execution.',
     candidatePath: 'policy-candidates/POL-102-data-egress-boundary.json',
   },
   'POL-105': {
     label: 'POL-105: Rate Limit Override',
+    description: 'Tests a more permissive review posture for throughput-sensitive workflow actions.',
     candidatePath: 'policy-candidates/POL-105-rate-limit-override.json',
   },
 } as const;
@@ -31,6 +33,7 @@ export function PolicyLab() {
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<any>(null);
+  const selectedPolicy = POLICY_CANDIDATES[selectedPolicyId];
 
   const runDryRun = async () => {
     setIsSimulating(true);
@@ -83,11 +86,21 @@ export function PolicyLab() {
   };
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="max-w-6xl space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold text-gray-100 tracking-tight">Policy Lab</h2>
+        <p className="mt-2 max-w-3xl text-sm text-gray-400">
+          Dry-run candidate governance policies against the real decision ledger before changing production behavior.
+        </p>
+      </div>
+
       <div className="p-6 rounded-xl bg-[#12121a] border border-gray-800/60 shadow-lg">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-medium text-gray-200">Policy Simulation Lab</h3>
-          <span className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-xs font-mono">
+          <div>
+            <h3 className="text-lg font-medium text-gray-200">Simulation Setup</h3>
+            <p className="mt-1 text-sm text-gray-500">{selectedPolicy.description}</p>
+          </div>
+          <span className="px-3 py-1 bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 rounded-full text-xs font-mono">
             DRY RUN ONLY
           </span>
         </div>
@@ -104,7 +117,7 @@ export function PolicyLab() {
                 setAnalysis(null);
                 setError(null);
               }}
-              className="w-full bg-[#1a1a24] border border-gray-700/50 rounded-lg px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500/50"
+              className="w-full bg-[#1a1a24] border border-gray-700/50 rounded-lg px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-emerald-500/50"
             >
               {Object.entries(POLICY_CANDIDATES).map(([id, policy]) => (
                 <option key={id} value={id}>{policy.label}</option>
@@ -122,7 +135,7 @@ export function PolicyLab() {
                 setAnalysis(null);
                 setError(null);
               }}
-              className="w-full bg-[#1a1a24] border border-gray-700/50 rounded-lg px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500/50"
+              className="w-full bg-[#1a1a24] border border-gray-700/50 rounded-lg px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-emerald-500/50"
             >
               <option value="staging">Staging (Shadow Mode)</option>
               <option value="production">Production (Dry Run)</option>
@@ -131,14 +144,14 @@ export function PolicyLab() {
         </div>
         {!isAdmin && (
           <div className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            Policy simulations are admin-only. Ask an admin to run this dry-run for production evidence.
+            Policy simulations are admin-only. Your current role is operator, so this page is visible but execution is locked.
           </div>
         )}
         
         <button 
           onClick={runDryRun}
           disabled={!isAdmin || isSimulating}
-          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSimulating ? (
             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -177,15 +190,32 @@ export function PolicyLab() {
             </div>
             <div className="p-4 bg-[#0a0a0c] rounded-lg border border-gray-800/60">
               <div className="text-xs text-gray-500 font-mono mb-1">CONFIDENCE</div>
-              <div className="text-lg font-medium text-blue-400">{result.confidence ?? result.impactScore}%</div>
+              <div className="text-lg font-medium text-emerald-400">{result.confidence ?? result.impactScore}%</div>
             </div>
           </div>
 
-          <div className="rounded-lg bg-[#0a0a0c] border border-gray-800/60 p-4">
-            <div className="text-xs text-gray-500 font-mono mb-2">SIMULATION SUMMARY</div>
-            <div className="text-sm text-gray-300">{result.recommendation || result.simulatedOutcome}</div>
-            <div className="mt-2 text-xs text-gray-500">
-              {result.candidatePolicyPath || POLICY_CANDIDATES[selectedPolicyId].candidatePath} - {result.environment || environment} dry run
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="rounded-lg bg-[#0a0a0c] border border-gray-800/60 p-4">
+              <div className="text-xs text-gray-500 font-mono mb-2">SIMULATION SUMMARY</div>
+              <div className="text-sm text-gray-300">{result.recommendation || result.simulatedOutcome}</div>
+              <div className="mt-2 text-xs text-gray-500">
+                {result.candidatePolicyPath || selectedPolicy.candidatePath} - {result.environment || environment} dry run
+              </div>
+            </div>
+            <div className="rounded-lg bg-[#0a0a0c] border border-gray-800/60 p-4">
+              <div className="text-xs text-gray-500 font-mono mb-2">ROUTING CHANGES</div>
+              {result.routingChanges && Object.keys(result.routingChanges).length ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(result.routingChanges).map(([route, count]) => (
+                    <div key={route} className="rounded border border-gray-800 bg-[#12121a] px-3 py-2">
+                      <div className="text-xs text-gray-500">{route.replaceAll('_', ' -> ')}</div>
+                      <div className="text-lg font-semibold text-gray-200">{count}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500">No routing changes detected in the current ledger sample.</div>
+              )}
             </div>
           </div>
 
@@ -202,8 +232,8 @@ export function PolicyLab() {
           </div>
 
           {analysis && (
-            <div className="mt-6 p-5 bg-blue-500/5 border border-blue-500/20 rounded-lg space-y-4">
-              <div className="flex items-center gap-2 text-blue-400 mb-2">
+            <div className="mt-6 p-5 bg-emerald-500/5 border border-emerald-500/20 rounded-lg space-y-4">
+              <div className="flex items-center gap-2 text-emerald-300 mb-2">
                 <Sparkles className="w-4 h-4" />
                 <h4 className="font-medium text-sm">AI Policy Impact Analysis</h4>
               </div>
@@ -234,10 +264,10 @@ export function PolicyLab() {
             <button 
               onClick={analyzeImpact}
               disabled={!isAdmin || isAnalyzing || analysis !== null}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
             >
               {isAnalyzing ? (
-                <div className="w-4 h-4 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
               ) : (
                 <Sparkles className="w-4 h-4" />
               )}
@@ -249,7 +279,7 @@ export function PolicyLab() {
               title="Production policy mutation is disabled until the governance API exposes an audited apply endpoint."
               className="px-6 py-2.5 bg-gray-800/60 text-gray-500 border border-gray-700/40 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Apply Unavailable
+              Approval Workflow Pending
             </button>
           </div>
         </div>

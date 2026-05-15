@@ -17,6 +17,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+async function fetchServerUser(token: string): Promise<User | null> {
+  try {
+    const response = await fetch('/api/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return {
+      email: data.email || data.sub || 'authenticated-user',
+      role: data.role === 'admin' ? 'admin' : 'operator',
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const clerkConfigured = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
   const clerkAuth = useClerkAuth();
@@ -64,10 +80,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const syncClerkSession = async () => {
       const clerkToken = await clerkAuth.getToken();
       if (!clerkToken) return;
+      const serverUser = await fetchServerUser(clerkToken);
 
       setToken((current) => current === clerkToken ? current : clerkToken);
       setUser((current) => {
-        const nextUser = { email: clerkEmail || clerkUser.user!.id, role: clerkRole };
+        const nextUser = serverUser || { email: clerkEmail || clerkUser.user!.id, role: clerkRole };
         if (current?.email === nextUser.email && current.role === nextUser.role) return current;
         return nextUser;
       });

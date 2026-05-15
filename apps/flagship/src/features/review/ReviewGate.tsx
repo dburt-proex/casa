@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
-import { ShieldAlert, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { ShieldAlert, CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import { ExplainButton } from '../../components/ExplainButton';
 
 export function ReviewGate() {
@@ -26,11 +26,17 @@ export function ReviewGate() {
 
   const handleReview = async (id: string, action: 'APPROVE' | 'HALT') => {
     try {
-      await api.post(`/decisions/${id}/review`, { action });
-      setFlagged(prev => prev.filter(d => d.id !== id));
+      await api.post(`/decisions/${id}/review`, { action, notes: `Reviewed from CASA Flagship as ${action}` });
+      await fetchFlagged();
     } catch (err: any) {
       alert(`Failed to ${action}: ${err.message}`);
     }
+  };
+
+  const formatTimestamp = (timestamp?: string) => {
+    if (!timestamp) return 'Timestamp unavailable';
+    const date = new Date(timestamp);
+    return Number.isNaN(date.getTime()) ? timestamp : date.toLocaleString();
   };
 
   if (loading) return <div className="text-gray-400 animate-pulse">Loading flagged decisions...</div>;
@@ -46,12 +52,20 @@ export function ReviewGate() {
         <div className="text-sm text-gray-400">
           {flagged.length} decision{flagged.length !== 1 ? 's' : ''} pending human review
         </div>
+        <button
+          onClick={fetchFlagged}
+          className="inline-flex items-center gap-2 rounded-lg border border-gray-700/60 bg-[#12121a] px-3 py-2 text-xs text-gray-300 hover:border-emerald-500/30 hover:text-emerald-300"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          Refresh
+        </button>
       </div>
 
       {flagged.length === 0 ? (
         <div className="p-12 text-center border border-gray-800/60 rounded-xl bg-[#12121a] text-gray-500">
           <CheckCircle className="w-12 h-12 mx-auto mb-4 text-emerald-500/50" />
           <p>No decisions currently require human intervention.</p>
+          <p className="mt-2 text-sm text-gray-600">Run a Workflow Intake scenario that returns REVIEW to populate this queue.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -67,7 +81,7 @@ export function ReviewGate() {
                       PENDING REVIEW
                     </span>
                   </div>
-                  <div className="text-sm text-gray-400 font-mono">{new Date(decision.timestamp).toLocaleString()}</div>
+                  <div className="text-sm text-gray-400 font-mono">{formatTimestamp(decision.timestamp)}</div>
                 </div>
                 <ExplainButton context={`Review Gate Decision ${decision.id}`} data={decision} />
               </div>
@@ -84,9 +98,9 @@ export function ReviewGate() {
                 <div className="p-3 bg-[#0a0a0c] rounded-lg border border-gray-800/60">
                   <div className="text-xs text-gray-500 font-mono mb-1">LIABILITY GRADE</div>
                   <div className="flex items-center gap-2">
-                    <AlertTriangle className={`w-4 h-4 ${decision.liabilityGrade === 'CRITICAL' ? 'text-red-500' : 'text-amber-500'}`} />
-                    <span className={`text-sm font-bold ${decision.liabilityGrade === 'CRITICAL' ? 'text-red-400' : 'text-amber-400'}`}>
-                      {decision.liabilityGrade}
+                    <AlertTriangle className={`w-4 h-4 ${decision.risk === 'CRITICAL' ? 'text-red-500' : 'text-amber-500'}`} />
+                    <span className={`text-sm font-bold ${decision.risk === 'CRITICAL' ? 'text-red-400' : 'text-amber-400'}`}>
+                      {decision.risk || decision.liabilityGrade}
                     </span>
                   </div>
                 </div>
@@ -99,6 +113,15 @@ export function ReviewGate() {
               <div className="mb-6 p-4 bg-gray-900/50 rounded-lg border border-gray-800/60">
                 <div className="text-xs text-gray-500 font-mono mb-2">FLAG REASON</div>
                 <p className="text-sm text-gray-300">{decision.reason}</p>
+                {decision.riskFactors?.length ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {decision.riskFactors.slice(0, 4).map((factor: string) => (
+                      <span key={factor} className="rounded-full border border-gray-700 bg-[#0a0a0c] px-2.5 py-1 text-xs text-gray-400">
+                        {factor}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
               </div>
 
               <div className="flex gap-3 justify-end pt-4 border-t border-gray-800/60">
