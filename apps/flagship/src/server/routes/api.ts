@@ -204,7 +204,7 @@ apiRouter.get('/decisions/history', authenticate, async (req, res) => {
   }
 });
 
-apiRouter.post('/decisions/:id/review', authenticate, async (req, res) => {
+apiRouter.post('/decisions/:id/review', requireAdmin, async (req, res) => {
   const { action, notes = '' } = req.body;
   if (action !== 'APPROVE' && action !== 'HALT') return res.status(400).json({ error: 'Invalid action. Must be APPROVE or HALT.' });
 

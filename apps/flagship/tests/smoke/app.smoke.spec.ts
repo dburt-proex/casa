@@ -9,6 +9,7 @@ test('operator console handles auth, sidebar navigation, workflow intake, and po
   await page.getByRole('button', { name: 'Login as Admin' }).click();
 
   await expect(page.getByRole('button', { name: 'Workflow Intake' })).toBeVisible();
+  await expect(page.getByText('Demo Readiness')).toBeVisible();
 
   for (const navItem of [
     'Workflow Intake',
@@ -25,6 +26,10 @@ test('operator console handles auth, sidebar navigation, workflow intake, and po
   }
 
   await page.getByRole('button', { name: 'Workflow Intake' }).click();
+  await expect(page.getByRole('button', { name: 'Load ALLOW demo' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Load REVIEW demo' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Load HALT demo' })).toBeVisible();
+  await page.getByRole('button', { name: 'Load REVIEW demo' }).click();
   await page.getByRole('button', { name: 'Evaluate with CASA' }).click();
   await expect(page.getByText('Why CASA Decided This')).toBeVisible();
   await expect(page.getByText('Reason Code')).toBeVisible();

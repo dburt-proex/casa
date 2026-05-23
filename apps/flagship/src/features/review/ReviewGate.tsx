@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
 import { ShieldAlert, CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import { ExplainButton } from '../../components/ExplainButton';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function ReviewGate() {
+  const { isAdmin } = useAuth();
   const [flagged, setFlagged] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
 
   const fetchFlagged = async () => {
     setLoading(true);
@@ -25,11 +29,23 @@ export function ReviewGate() {
   }, []);
 
   const handleReview = async (id: string, action: 'APPROVE' | 'HALT') => {
+    if (!isAdmin) return;
+    setReviewingId(id);
     try {
-      await api.post(`/decisions/${id}/review`, { action, notes: `Reviewed from CASA Flagship as ${action}` });
+      await api.post(`/decisions/${id}/review`, {
+        action,
+        notes: reviewNotes[id]?.trim() || `Reviewed from CASA Flagship as ${action}`
+      });
+      setReviewNotes((current) => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
       await fetchFlagged();
     } catch (err: any) {
       alert(`Failed to ${action}: ${err.message}`);
+    } finally {
+      setReviewingId(null);
     }
   };
 
@@ -60,6 +76,12 @@ export function ReviewGate() {
           Refresh
         </button>
       </div>
+
+      {!isAdmin && (
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          Read-only client demo mode: operators can inspect review evidence, but only admins can approve or halt decisions.
+        </div>
+      )}
 
       {flagged.length === 0 ? (
         <div className="p-12 text-center border border-gray-800/60 rounded-xl bg-[#12121a] text-gray-500">
@@ -124,20 +146,33 @@ export function ReviewGate() {
                 ) : null}
               </div>
 
+              <div className="mb-6">
+                <label className="block text-xs font-mono text-gray-500 mb-2">REVIEW NOTES</label>
+                <textarea
+                  value={reviewNotes[decision.id] || ''}
+                  onChange={(event) => setReviewNotes((current) => ({ ...current, [decision.id]: event.target.value }))}
+                  disabled={!isAdmin}
+                  placeholder={isAdmin ? 'Add the reason for approve/halt before recording the review.' : 'Admin access required to record review notes.'}
+                  className="min-h-20 w-full rounded-lg border border-gray-800/60 bg-[#0a0a0c] px-3 py-2 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500/40 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </div>
+
               <div className="flex gap-3 justify-end pt-4 border-t border-gray-800/60">
                 <button
                   onClick={() => handleReview(decision.id, 'HALT')}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-sm font-medium transition-colors"
+                  disabled={!isAdmin || reviewingId === decision.id}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <XCircle className="w-4 h-4" />
-                  Halt Action
+                  {isAdmin ? 'Halt Action' : 'Admin Only'}
                 </button>
                 <button
                   onClick={() => handleReview(decision.id, 'APPROVE')}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-lg text-sm font-medium transition-colors"
+                  disabled={!isAdmin || reviewingId === decision.id}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <CheckCircle className="w-4 h-4" />
-                  Approve Action
+                  {isAdmin ? 'Approve Action' : 'Admin Only'}
                 </button>
               </div>
             </div>

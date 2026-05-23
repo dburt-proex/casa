@@ -20,7 +20,7 @@ vi.mock('@clerk/backend', () => ({
 }));
 
 import { jwtVerify } from 'jose';
-import { requireAdminConfirmation } from '../../src/server/middleware/audit.js';
+import { requireAdmin, requireAdminConfirmation } from '../../src/server/middleware/audit.js';
 import type { Request, Response, NextFunction } from 'express';
 
 function makeReq(overrides: Partial<{
@@ -48,6 +48,35 @@ beforeEach(() => {
   vi.clearAllMocks();
   delete process.env.CLERK_SECRET_KEY;
   mockAuditRecord.mockResolvedValue(undefined);
+});
+
+describe('requireAdmin middleware', () => {
+  it('returns 403 when a valid token belongs to an operator', async () => {
+    vi.mocked(jwtVerify).mockResolvedValueOnce({ payload: { role: 'operator', sub: 'op-1' } } as any);
+
+    const req = makeReq({ headers: { authorization: 'Bearer operator-token' } });
+    const res = makeRes();
+    const jsonSpy = vi.fn();
+    (res.status as any).mockReturnValue({ json: jsonSpy });
+
+    await requireAdmin(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(jsonSpy).toHaveBeenCalledWith(expect.objectContaining({ message: 'Admin role required' }));
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('calls next() for admin users', async () => {
+    vi.mocked(jwtVerify).mockResolvedValueOnce({ payload: { role: 'admin', sub: 'admin-1' } } as any);
+
+    const req = makeReq({ headers: { authorization: 'Bearer admin-token' } });
+    const res = makeRes();
+
+    await requireAdmin(req, res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(res.status).not.toHaveBeenCalled();
+  });
 });
 
 describe('requireAdminConfirmation middleware', () => {

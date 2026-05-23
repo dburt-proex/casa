@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Activity, AlertTriangle, Clock, ServerCrash, Terminal } from 'lucide-react';
+import { api } from '../lib/api';
 
 export function OpsMetricsView() {
   const [metrics, setMetrics] = useState<any>(null);
@@ -9,9 +10,7 @@ export function OpsMetricsView() {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const res = await fetch('/api/ops/metrics');
-        if (!res.ok) throw new Error('Failed to fetch metrics');
-        const data = await res.json();
+        const data = await api.get('/ops/metrics');
         setMetrics(data);
       } catch (err: any) {
         setError(err.message);

@@ -42,6 +42,56 @@ const initialForm: FormState = {
   confidence: 0.7
 };
 
+const demoScenarios: Array<{
+  id: 'allow' | 'review' | 'halt';
+  label: string;
+  expected: 'ALLOW' | 'REVIEW' | 'HALT';
+  description: string;
+  form: FormState;
+}> = [
+  {
+    id: 'allow',
+    label: 'Load ALLOW demo',
+    expected: 'ALLOW',
+    description: 'Low-risk internal summarization with reversible execution.',
+    form: {
+      companyName: 'Acme Operations',
+      industry: 'Field Services',
+      workflowName: 'Support Ticket Summarization',
+      agent: 'demo-agent',
+      action: 'summarize public support ticket',
+      dataExposure: 'public',
+      customerFacing: false,
+      reversibility: 'reversible',
+      confidence: 0.95
+    }
+  },
+  {
+    id: 'review',
+    label: 'Load REVIEW demo',
+    expected: 'REVIEW',
+    description: 'Customer-facing generated email routed to human review.',
+    form: initialForm
+  },
+  {
+    id: 'halt',
+    label: 'Load HALT demo',
+    expected: 'HALT',
+    description: 'Destructive customer-record action blocked before execution.',
+    form: {
+      companyName: 'Acme Operations',
+      industry: 'Field Services',
+      workflowName: 'Customer Records Cleanup',
+      agent: 'demo-agent',
+      action: 'delete customer records',
+      dataExposure: 'sensitive',
+      customerFacing: false,
+      reversibility: 'irreversible',
+      confidence: 0.6
+    }
+  }
+];
+
 function inferRiskScore(form: FormState) {
   let score = 0.2;
   if (form.customerFacing) score += 0.2;
@@ -110,6 +160,12 @@ export function WorkflowIntake({ onOpenReviewGate }: WorkflowIntakeProps) {
     }
   };
 
+  const loadScenario = (scenario: (typeof demoScenarios)[number]) => {
+    setForm(scenario.form);
+    setResult(null);
+    setError('');
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <div className="flex items-start justify-between gap-6">
@@ -122,6 +178,30 @@ export function WorkflowIntake({ onOpenReviewGate }: WorkflowIntakeProps) {
         <div className="text-xs font-mono text-emerald-300 border border-emerald-500/20 bg-emerald-500/10 rounded-lg px-3 py-2">
           Demo-live prototype - evidence-backed routing
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {demoScenarios.map((scenario) => (
+          <button
+            key={scenario.id}
+            type="button"
+            onClick={() => loadScenario(scenario)}
+            className={cn(
+              'rounded-xl border bg-[#12121a] p-4 text-left transition-colors hover:border-emerald-500/30',
+              scenario.expected === 'ALLOW' && 'border-emerald-500/20',
+              scenario.expected === 'REVIEW' && 'border-amber-500/20',
+              scenario.expected === 'HALT' && 'border-red-500/20'
+            )}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-medium text-gray-200">{scenario.label}</span>
+              <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-semibold', decisionStyle(scenario.expected))}>
+                {scenario.expected}
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-gray-500">{scenario.description}</p>
+          </button>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

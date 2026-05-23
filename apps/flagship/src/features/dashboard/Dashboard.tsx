@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { cn } from '../../lib/utils';
 import { ExplainButton } from '../../components/ExplainButton';
+import { DemoReadiness } from '../../components/DemoReadiness';
 import { Activity, ShieldAlert, FileText, Server } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
@@ -39,6 +40,8 @@ export function Dashboard() {
         </div>
         <ExplainButton context="CASA System Dashboard Metrics" data={data} />
       </div>
+
+      <DemoReadiness />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
