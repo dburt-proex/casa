@@ -96,18 +96,19 @@ Optional:
 
 ```env
 GEMINI_API_KEY=
-GEMINI_CASA_API=
 REDIS_URL=
 ```
 
 Notes:
 
-- `CASA_GOVERNANCE_API_URL` is the primary backend URL for the canonical CASA governance API.
-- `BACKEND_API_URL` is retained only as a compatibility fallback for existing bridge code.
+- `CASA_GOVERNANCE_API_URL` is the canonical production backend URL for the CASA governance API.
+- `CASA_API_URL` and `BACKEND_API_URL` are accepted only outside production for local compatibility.
+- `GEMINI_API_KEY` is the canonical production variable for Gemini explanations.
 - Clerk keys enable production authentication.
 - `JWT_SECRET` should be a long random secret outside local development.
 - `DATABASE_URL` enables durable Postgres audit logging.
 - `REDIS_URL` is optional unless session storage is configured.
+- `.env.local` is the local source of truth. `.env.example` supplies development-only defaults when variables are missing; it is not loaded in production and never overrides already-set variables.
 
 ---
 
@@ -166,9 +167,14 @@ CLERK_SECRET_KEY=
 ENABLE_DEV_LOGIN=false
 JWT_SECRET=
 DATABASE_URL=
+GEMINI_API_KEY=
 ```
 
 Deploy from the canonical monorepo root `render.yaml` so Render provisions Flagship, the governance API, and Postgres together.
+
+Render auto-deploy is currently off. Deploy manually after CI passes, or install a fresh Render deploy key before re-enabling automated deployments.
+
+The process-local Express rate limiter is not global across multiple scaled instances. The in-memory chat fallback is bounded by TTL and session count, but Redis remains the preferred option if chat sessions need to survive process restarts.
 
 ---
 
@@ -254,11 +260,13 @@ Likely causes:
 
 ### Backend URL is wrong
 
-Current expected backend URL:
+Production should use Render's internal governance API host through `CASA_GOVERNANCE_API_URL`. Local development can use:
 
 ```env
-CASA_GOVERNANCE_API_URL=https://casa-control-plane.onrender.com
+CASA_GOVERNANCE_API_URL=http://127.0.0.1:5000
 ```
+
+Do not paste the full `CASA_GOVERNANCE_API_URL=...` assignment into a deployment value field. Paste only the URL value.
 
 ### Render backend health check
 
@@ -272,8 +280,8 @@ Use:
 
 ## Recommended Near-Term Next Steps
 
-- deploy or redeploy `dburt-proex/casa-control-plane`
-- set `CASA_GOVERNANCE_API_URL` in CASA-Flagship
+- manually deploy the canonical monorepo services from root `render.yaml`
+- set canonical production variables: `CASA_GOVERNANCE_API_URL`, `GEMINI_API_KEY`, Clerk keys, `DATABASE_URL`, and `CORS_ORIGINS`
 - run ALLOW / REVIEW / HALT verification through `/evaluate`
 - confirm each successful decision appears in `/ledger`
 - verify dashboard values are real backend data

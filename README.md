@@ -43,15 +43,18 @@ The root `render.yaml` defines both services with Render `rootDir` settings:
 - `casa-flagship` builds from `apps/flagship`
 - `casa-postgres` stores governance decisions and Flagship audit events
 
-Render injects the governance API private `host:port` into Flagship through `CASA_GOVERNANCE_API_URL`; the Flagship server normalizes it to `http://...` before calling the backend. Render also injects the internal Postgres `DATABASE_URL` into both services and generates `JWT_SECRET` for local-token fallback paths.
+Render injects the governance API private `host:port` into Flagship through `CASA_GOVERNANCE_API_URL`; the Flagship server validates the value, normalizes it to `http://...` when needed, and only permits the expected governance API host in production. Render also injects the internal Postgres `DATABASE_URL` into both services and generates `JWT_SECRET` for local-token fallback paths.
 
 `ENABLE_DEV_LOGIN` is set to `false` in the Blueprint. Configure these Render environment variables during the first Blueprint sync:
 
 - `VITE_CLERK_PUBLISHABLE_KEY`
 - `CLERK_SECRET_KEY`
+- `GEMINI_API_KEY`
 - `CORS_ORIGINS` with the final Flagship URL after Render assigns it
 
 The Postgres database uses an empty `ipAllowList`, so it is reachable over Render private networking only.
+
+Render auto-deploy is intentionally off for the current demo posture. Deploy manually after CI passes, or replace the expired Render deploy key before automating deployments again.
 
 ## Auth
 
@@ -60,7 +63,14 @@ Flagship uses Clerk when `VITE_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` are
 - `publicMetadata.role = "operator"` for normal operators
 - `publicMetadata.role = "admin"` or `privateMetadata.role = "admin"` for admin policy changes
 
-The `/api/auth/dev-login` endpoint is only for local development and only works when `ENABLE_DEV_LOGIN=true`.
+The `/api/auth/dev-login` endpoint is only for local development. It is always unavailable when `NODE_ENV=production`, even if `ENABLE_DEV_LOGIN=true` is accidentally set.
+
+## Operational Constraints
+
+- `CASA_GOVERNANCE_API_URL` is the canonical production backend variable.
+- `GEMINI_API_KEY` is the canonical production Gemini variable.
+- Local development should use `apps/flagship/.env.local`; `.env.example` is not loaded in production and never overrides already-set local variables.
+- The current Express rate limiter and in-memory chat fallback are process-local. They are acceptable for the guided demo, but not global across multiple scaled instances.
 
 ## Ledger Storage
 

@@ -25,7 +25,7 @@ export function getJwtSecretBytes() {
 
 export function isDevLoginEnabled() {
   if (isProduction()) {
-    return process.env.ENABLE_DEV_LOGIN === 'true';
+    return false;
   }
   return process.env.ENABLE_DEV_LOGIN !== 'false';
 }

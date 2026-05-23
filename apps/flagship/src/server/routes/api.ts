@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { SignJWT } from 'jose';
-import { backendBridge } from '../services/backendBridge.js';
+import { backendBridge, getBackendBridgeConfigStatus } from '../services/backendBridge.js';
 import { geminiService } from '../services/gemini.js';
 import { requireAdmin, requireAdminConfirmation } from '../middleware/audit.js';
 import { authenticate } from '../middleware/auth.js';
@@ -48,12 +48,18 @@ apiRouter.get('/me', authenticate, (req, res) => {
 });
 
 apiRouter.get("/config/status", authenticate, (_req, res) => {
+  const backendStatus = getBackendBridgeConfigStatus();
+  const geminiStatus = geminiService.getConfigStatus();
   res.json({
     clerkConfigured: !!process.env.CLERK_SECRET_KEY?.trim(),
-    geminiConfigured: geminiService.isConfigured(),
-    backendConfigured: !!(process.env.CASA_GOVERNANCE_API_URL || process.env.CASA_API_URL || process.env.BACKEND_API_URL),
+    geminiConfigured: geminiStatus.geminiConfigured,
+    canonicalGeminiConfigured: geminiStatus.canonicalGeminiConfigured,
+    legacyGeminiConfigured: geminiStatus.legacyGeminiConfigured,
+    backendConfigured: backendStatus.backendConfigured,
+    backendUrlValid: backendStatus.backendUrlValid,
     postgresConfigured: !!process.env.DATABASE_URL?.trim(),
     corsOriginsConfigured: !!process.env.CORS_ORIGINS?.trim(),
+    devLoginAvailable: isDevLoginEnabled(),
   });
 });
 
