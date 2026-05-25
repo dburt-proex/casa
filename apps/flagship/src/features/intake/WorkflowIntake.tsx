@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { ShieldCheck, AlertTriangle, Ban, ClipboardList, ExternalLink, ArrowRight } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, Ban, ClipboardList, ExternalLink, ArrowRight, CalendarDays } from 'lucide-react';
 import { api } from '../../lib/api';
 import { cn } from '../../lib/utils';
 import { ExplainButton } from '../../components/ExplainButton';
+import { useAuth } from '../../contexts/AuthContext';
+import type { GovernanceSprint } from '../../types';
 
 type EvaluationResult = {
   decisionId?: string;
@@ -119,13 +121,18 @@ function decisionIcon(decision?: string) {
 
 type WorkflowIntakeProps = {
   onOpenReviewGate?: () => void;
+  onOpenSprintWorkspace?: (sprintId: string) => void;
 };
 
-export function WorkflowIntake({ onOpenReviewGate }: WorkflowIntakeProps) {
+export function WorkflowIntake({ onOpenReviewGate, onOpenSprintWorkspace }: WorkflowIntakeProps) {
+  const { isAdmin } = useAuth();
   const [form, setForm] = useState<FormState>(initialForm);
   const [result, setResult] = useState<EvaluationResult | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [creatingSprint, setCreatingSprint] = useState(false);
+  const [createdSprint, setCreatedSprint] = useState<GovernanceSprint | null>(null);
+  const [sprintError, setSprintError] = useState('');
 
   const riskScore = useMemo(() => inferRiskScore(form), [form]);
 
@@ -137,6 +144,8 @@ export function WorkflowIntake({ onOpenReviewGate }: WorkflowIntakeProps) {
     setLoading(true);
     setError('');
     setResult(null);
+    setCreatedSprint(null);
+    setSprintError('');
     try {
       const response = await api.post<EvaluationResult>('/evaluate', {
         companyName: form.companyName,
@@ -164,6 +173,47 @@ export function WorkflowIntake({ onOpenReviewGate }: WorkflowIntakeProps) {
     setForm(scenario.form);
     setResult(null);
     setError('');
+    setCreatedSprint(null);
+    setSprintError('');
+  };
+
+  const createGovernanceSprint = async () => {
+    if (!result?.decisionId) {
+      setSprintError('CASA needs a ledger decision ID before it can create a governance sprint.');
+      return;
+    }
+
+    setCreatingSprint(true);
+    setSprintError('');
+    try {
+      const sprint = await api.post<GovernanceSprint>('/governance-sprints', {
+        decisionId: result.decisionId,
+        workflowSummary: `${form.workflowName} - ${form.companyName}`,
+        durationDays: 7,
+        source: 'workflow_intake',
+        notes: 'Created from Workflow Intake decision result.',
+        decisionSnapshot: {
+          result,
+          workflow: {
+            companyName: form.companyName,
+            industry: form.industry,
+            workflowName: form.workflowName,
+            agent: form.agent,
+            action: form.action,
+            dataExposure: form.dataExposure,
+            customerFacing: form.customerFacing,
+            reversibility: form.reversibility,
+            confidence: form.confidence,
+            riskScore,
+          },
+        },
+      });
+      setCreatedSprint(sprint);
+    } catch (err: any) {
+      setSprintError(err.message || 'Failed to create governance sprint');
+    } finally {
+      setCreatingSprint(false);
+    }
   };
 
   return (
@@ -367,9 +417,39 @@ export function WorkflowIntake({ onOpenReviewGate }: WorkflowIntakeProps) {
           </div>
 
           <div className="p-6 rounded-xl bg-emerald-500/10 border border-emerald-500/20 shadow-lg space-y-3">
-            <h3 className="text-sm font-medium text-emerald-200">Next Step</h3>
+            <h3 className="text-sm font-medium text-emerald-200 flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" />
+              Governance Sprint
+            </h3>
             <p className="text-xs text-gray-300">Use this result to scope a 7-14 day CASA Governance Sprint: map one workflow, insert ALLOW / REVIEW / HALT control, and produce decision evidence.</p>
-            <button className="w-full px-4 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">Request Governance Sprint</button>
+            {sprintError && <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-200">{sprintError}</div>}
+            {createdSprint ? (
+              <div className="space-y-3">
+                <div className="rounded-lg border border-emerald-500/20 bg-[#0a0a0c] p-3 text-xs text-gray-300">
+                  <div className="font-mono text-emerald-300">{createdSprint.id}</div>
+                  <div className="mt-1">Status: {createdSprint.status} - Phase: {createdSprint.phase}</div>
+                </div>
+                {onOpenSprintWorkspace && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenSprintWorkspace(createdSprint.id)}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-medium text-white hover:bg-emerald-500"
+                  >
+                    Open Governance Sprint
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={createGovernanceSprint}
+                disabled={!result || creatingSprint}
+                className="w-full px-4 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {creatingSprint ? 'Creating Sprint...' : isAdmin ? 'Create Governance Sprint' : 'Request Governance Sprint'}
+              </button>
+            )}
           </div>
         </div>
       </div>

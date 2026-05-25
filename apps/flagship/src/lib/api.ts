@@ -35,6 +35,33 @@ export const api = {
     return res.json();
   },
 
+  async patch<T>(endpoint: string, payload: any): Promise<T> {
+    const token = await this.resolveAuthToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`/api${endpoint}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        localStorage.removeItem('casa_token');
+        localStorage.removeItem('casa_user');
+      }
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || errorData.error || `API Error: ${res.statusText}`);
+    }
+
+    return res.json();
+  },
+
   async get<T>(endpoint: string): Promise<T> {
     const token = await this.resolveAuthToken();
     const headers: Record<string, string> = {};

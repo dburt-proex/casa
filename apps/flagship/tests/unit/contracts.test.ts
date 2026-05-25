@@ -13,6 +13,8 @@ import {
   DecisionReplaySchema,
   ChatRequestSchema,
   AdminApplyPolicySchema,
+  GovernanceSprintCreateSchema,
+  GovernanceSprintUpdateSchema,
 } from '../../src/server/schemas/contracts.js';
 
 // ---------------------------------------------------------------------------
@@ -287,5 +289,67 @@ describe('AdminApplyPolicySchema', () => {
   it('rejects missing confirmationCode field', () => {
     const { confirmationCode: _, ...rest } = valid;
     expect(() => AdminApplyPolicySchema.parse(rest)).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GovernanceSprintCreateSchema
+// ---------------------------------------------------------------------------
+
+describe('GovernanceSprintCreateSchema', () => {
+  const valid = {
+    decisionId: 'dec-123',
+    workflowSummary: 'Customer email workflow',
+    decisionSnapshot: { decision: 'REVIEW' },
+    durationDays: 7 as const,
+    source: 'workflow_intake' as const,
+  };
+
+  it('accepts a valid sprint request', () => {
+    expect(() => GovernanceSprintCreateSchema.parse(valid)).not.toThrow();
+  });
+
+  it('defaults duration and source', () => {
+    const result = GovernanceSprintCreateSchema.parse({
+      decisionId: 'dec-124',
+      workflowSummary: 'Internal summary workflow',
+    });
+    expect(result.durationDays).toBe(7);
+    expect(result.source).toBe('manual');
+  });
+
+  it('accepts 14 day sprint duration', () => {
+    const result = GovernanceSprintCreateSchema.parse({ ...valid, durationDays: 14 });
+    expect(result.durationDays).toBe(14);
+  });
+
+  it('rejects unsupported sprint durations', () => {
+    expect(() => GovernanceSprintCreateSchema.parse({ ...valid, durationDays: 30 })).toThrow();
+  });
+
+  it('rejects missing decision ID', () => {
+    const { decisionId: _, ...rest } = valid;
+    expect(() => GovernanceSprintCreateSchema.parse(rest)).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GovernanceSprintUpdateSchema
+// ---------------------------------------------------------------------------
+
+describe('GovernanceSprintUpdateSchema', () => {
+  it('accepts admin update controls', () => {
+    expect(() => GovernanceSprintUpdateSchema.parse({
+      status: 'ACTIVE',
+      phase: 'Controls',
+      owner: 'admin@example.com',
+      notes: 'Controls mapped.',
+      checklist: [{ id: 'map-action', label: 'Map action', complete: true }],
+    })).not.toThrow();
+  });
+
+  it('rejects invalid statuses and phases', () => {
+    expect(() => GovernanceSprintUpdateSchema.parse({ status: 'PAUSED' })).toThrow();
+    expect(() => GovernanceSprintUpdateSchema.parse({ phase: 'Billing' })).toThrow();
   });
 });
