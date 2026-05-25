@@ -7,17 +7,9 @@ import {
 } from '../schemas/contracts.js';
 import { z } from 'zod';
 
-let BACKEND_API_URL = process.env.CASA_GOVERNANCE_API_URL || process.env.CASA_API_URL || process.env.BACKEND_API_URL || 'http://127.0.0.1:5000';
-if (BACKEND_API_URL.startsWith('CASA_GOVERNANCE_API_URL=')) {
-  BACKEND_API_URL = BACKEND_API_URL.replace('CASA_GOVERNANCE_API_URL=', '');
-}
-if (!/^https?:\/\//i.test(BACKEND_API_URL)) {
-  BACKEND_API_URL = `http://${BACKEND_API_URL}`;
-}
-if (BACKEND_API_URL.endsWith('/')) {
-  BACKEND_API_URL = BACKEND_API_URL.slice(0, -1);
-}
-console.log('[BACKEND BRIDGE] Initialized with canonical CASA Governance API:', BACKEND_API_URL);
+const DEFAULT_DEV_BACKEND_URL = 'http://127.0.0.1:5000';
+const DEFAULT_PRODUCTION_HOSTS = ['casa-governance-api', 'casa-governance-api.onrender.com'];
+const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 
 type JsonRecord = Record<string, any>;
 
@@ -29,6 +21,112 @@ export type WorkflowEvaluationRequest = {
   action: string;
   signals: JsonRecord;
 };
+
+type BackendUrlCandidate = {
+  raw: string;
+  source: string | null;
+  configured: boolean;
+};
+
+type BackendUrlResolution = BackendUrlCandidate & {
+  baseUrl: string;
+};
+
+export type BackendBridgeConfigStatus = {
+  backendConfigured: boolean;
+  backendUrlValid: boolean;
+};
+
+function isProduction() {
+  return process.env.NODE_ENV === 'production';
+}
+
+function selectBackendUrlCandidate(): BackendUrlCandidate {
+  const canonical = process.env.CASA_GOVERNANCE_API_URL?.trim();
+  if (canonical) {
+    return { raw: canonical, source: 'CASA_GOVERNANCE_API_URL', configured: true };
+  }
+
+  if (!isProduction()) {
+    const legacyCasaUrl = process.env.CASA_API_URL?.trim();
+    if (legacyCasaUrl) {
+      return { raw: legacyCasaUrl, source: 'CASA_API_URL', configured: true };
+    }
+
+    const legacyBackendUrl = process.env.BACKEND_API_URL?.trim();
+    if (legacyBackendUrl) {
+      return { raw: legacyBackendUrl, source: 'BACKEND_API_URL', configured: true };
+    }
+
+    return { raw: DEFAULT_DEV_BACKEND_URL, source: 'development-default', configured: false };
+  }
+
+  return { raw: '', source: null, configured: false };
+}
+
+function parseAllowedProductionHosts() {
+  const configuredHosts = (process.env.CASA_GOVERNANCE_ALLOWED_HOSTS || '')
+    .split(',')
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean);
+  return new Set([...DEFAULT_PRODUCTION_HOSTS, ...configuredHosts]);
+}
+
+export function resolveBackendBaseUrl(): BackendUrlResolution {
+  const candidate = selectBackendUrlCandidate();
+
+  if (!candidate.raw) {
+    throw new Error('CASA_GOVERNANCE_API_URL must be configured in production');
+  }
+
+  if (/^[A-Z0-9_]+\s*=/i.test(candidate.raw)) {
+    throw new Error(`Invalid ${candidate.source || 'backend URL'} value: paste only the URL, not KEY=value`);
+  }
+
+  const rawUrl = /^https?:\/\//i.test(candidate.raw) ? candidate.raw : `http://${candidate.raw}`;
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error(`Invalid ${candidate.source || 'backend URL'} value: must be a valid HTTP(S) URL`);
+  }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error(`Invalid ${candidate.source || 'backend URL'} value: only HTTP(S) URLs are supported`);
+  }
+
+  if (isProduction()) {
+    const allowedHosts = parseAllowedProductionHosts();
+    if (!allowedHosts.has(parsed.hostname.toLowerCase())) {
+      throw new Error('Invalid CASA_GOVERNANCE_API_URL host for production');
+    }
+  }
+
+  return {
+    ...candidate,
+    baseUrl: parsed.toString().replace(/\/$/, ''),
+  };
+}
+
+export function getBackendBridgeConfigStatus(): BackendBridgeConfigStatus {
+  try {
+    const resolved = resolveBackendBaseUrl();
+    return {
+      backendConfigured: resolved.configured,
+      backendUrlValid: true,
+    };
+  } catch {
+    const candidate = selectBackendUrlCandidate();
+    return {
+      backendConfigured: candidate.configured,
+      backendUrlValid: false,
+    };
+  }
+}
+
+function getBackendBaseUrl() {
+  return resolveBackendBaseUrl().baseUrl;
+}
 
 function riskToScore(risk: string): number {
   const normalized = String(risk || '').toUpperCase();
@@ -49,7 +147,7 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutM
     });
     
     const contentLength = response.headers.get('content-length');
-    if (contentLength && parseInt(contentLength, 10) > 5 * 1024 * 1024) {
+    if (contentLength && parseInt(contentLength, 10) > MAX_RESPONSE_BYTES) {
       throw new Error(`Backend Bridge Error: Response payload too large (${contentLength} bytes)`);
     }
 
@@ -65,11 +163,15 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutM
       throw new Error(`Backend Bridge Error: ${response.status} ${response.statusText}${detail ? ` - ${detail}` : ''}`);
     }
 
-    if (text.length > 5 * 1024 * 1024) {
+    if (text.length > MAX_RESPONSE_BYTES) {
       throw new Error(`Backend Bridge Error: Response payload too large (${text.length} characters)`);
     }
     
-    return JSON.parse(text);
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error('Backend Bridge Error: Expected JSON response from governance API');
+    }
   } catch (error: any) {
     if (error.name === 'AbortError') {
       throw new Error(`Backend Bridge Timeout: Request to ${url} exceeded ${timeoutMs}ms`);
@@ -178,11 +280,12 @@ function normalizeLedgerDecision(raw: JsonRecord): JsonRecord {
 
 export const backendBridge = {
   async evaluateAction(payload: WorkflowEvaluationRequest, requestId?: string): Promise<JsonRecord> {
+    const backendApiUrl = getBackendBaseUrl();
     const headers = {
       'Content-Type': 'application/json',
       ...(requestId ? { 'X-Request-ID': requestId } : {})
     };
-    return fetchWithTimeout(`${BACKEND_API_URL}/evaluate`, {
+    return fetchWithTimeout(`${backendApiUrl}/evaluate`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -199,18 +302,21 @@ export const backendBridge = {
   },
 
   async getDashboard(requestId?: string): Promise<z.infer<typeof DashboardSchema>> {
+    const backendApiUrl = getBackendBaseUrl();
     const headers = requestId ? { 'X-Request-ID': requestId } : {};
-    const data = await fetchWithTimeout(`${BACKEND_API_URL}/dashboard`, { headers });
+    const data = await fetchWithTimeout(`${backendApiUrl}/dashboard`, { headers });
     return normalizeDashboard(data);
   },
 
   async getBoundaryStress(requestId?: string): Promise<z.infer<typeof BoundaryStressSchema>> {
+    const backendApiUrl = getBackendBaseUrl();
     const headers = requestId ? { 'X-Request-ID': requestId } : {};
-    const data = await fetchWithTimeout(`${BACKEND_API_URL}/boundary-stress`, { headers });
+    const data = await fetchWithTimeout(`${backendApiUrl}/boundary-stress`, { headers });
     return normalizeBoundaryStress(data);
   },
 
   async runDryRun(payload: z.infer<typeof PolicyDryRunRequestSchema>, requestId?: string): Promise<z.infer<typeof PolicyDryRunResponseSchema>> {
+    const backendApiUrl = getBackendBaseUrl();
     const parsed = PolicyDryRunRequestSchema.parse(payload);
     const candidatePath = parsed.parameters?.policy_candidate_path || parsed.parameters?.policyCandidatePath;
     if (!candidatePath) {
@@ -220,7 +326,7 @@ export const backendBridge = {
       'Content-Type': 'application/json',
       ...(requestId ? { 'X-Request-ID': requestId } : {})
     };
-    const data = await fetchWithTimeout(`${BACKEND_API_URL}/policy/dryrun`, {
+    const data = await fetchWithTimeout(`${backendApiUrl}/policy/dryrun`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -232,20 +338,23 @@ export const backendBridge = {
   },
 
   async replayDecision(decisionId: string, requestId?: string): Promise<z.infer<typeof DecisionReplaySchema>> {
+    const backendApiUrl = getBackendBaseUrl();
     const headers = requestId ? { 'X-Request-ID': requestId } : {};
-    const data = await fetchWithTimeout(`${BACKEND_API_URL}/decision-replay/${encodeURIComponent(decisionId)}`, { headers });
+    const data = await fetchWithTimeout(`${backendApiUrl}/decision-replay/${encodeURIComponent(decisionId)}`, { headers });
     return normalizeDecisionReplay(data, decisionId);
   },
 
   async getFlaggedDecisions(requestId?: string): Promise<JsonRecord[]> {
+    const backendApiUrl = getBackendBaseUrl();
     const headers = requestId ? { 'X-Request-ID': requestId } : {};
-    const data = await fetchWithTimeout(`${BACKEND_API_URL}/decisions/flagged`, { headers });
+    const data = await fetchWithTimeout(`${backendApiUrl}/decisions/flagged`, { headers });
     return Array.isArray(data) ? data.map(normalizeLedgerDecision) : [];
   },
 
   async getDecisionHistory(requestId?: string): Promise<JsonRecord[]> {
+    const backendApiUrl = getBackendBaseUrl();
     const headers = requestId ? { 'X-Request-ID': requestId } : {};
-    const data = await fetchWithTimeout(`${BACKEND_API_URL}/ledger`, { headers });
+    const data = await fetchWithTimeout(`${backendApiUrl}/ledger`, { headers });
     const entries = Array.isArray(data) ? data.map(normalizeLedgerDecision) : [];
     return entries.sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
   },
@@ -257,11 +366,12 @@ export const backendBridge = {
     notes = '',
     requestId?: string
   ): Promise<JsonRecord> {
+    const backendApiUrl = getBackendBaseUrl();
     const headers = {
       'Content-Type': 'application/json',
       ...(requestId ? { 'X-Request-ID': requestId } : {})
     };
-    return fetchWithTimeout(`${BACKEND_API_URL}/decisions/${encodeURIComponent(decisionId)}/review`, {
+    return fetchWithTimeout(`${backendApiUrl}/decisions/${encodeURIComponent(decisionId)}/review`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ action, reviewer, notes })

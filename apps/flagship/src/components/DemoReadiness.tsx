@@ -6,17 +6,25 @@ import { cn } from '../lib/utils';
 type ConfigStatus = {
   clerkConfigured: boolean;
   geminiConfigured: boolean;
+  canonicalGeminiConfigured: boolean;
+  legacyGeminiConfigured: boolean;
   backendConfigured: boolean;
+  backendUrlValid: boolean;
   postgresConfigured: boolean;
   corsOriginsConfigured: boolean;
+  devLoginAvailable: boolean;
 };
 
 const checks: Array<{ key: keyof ConfigStatus; label: string; required: boolean }> = [
   { key: 'clerkConfigured', label: 'Clerk Auth', required: true },
   { key: 'geminiConfigured', label: 'Gemini Explain', required: true },
+  { key: 'canonicalGeminiConfigured', label: 'Canonical Gemini', required: true },
   { key: 'backendConfigured', label: 'Governance API', required: true },
+  { key: 'backendUrlValid', label: 'Backend URL Valid', required: true },
   { key: 'postgresConfigured', label: 'Postgres Ledger', required: true },
   { key: 'corsOriginsConfigured', label: 'CORS Locked', required: false },
+  { key: 'legacyGeminiConfigured', label: 'Legacy Gemini Alias', required: false },
+  { key: 'devLoginAvailable', label: 'Dev Login Disabled', required: false },
 ];
 
 export function DemoReadiness() {
@@ -70,9 +78,12 @@ export function DemoReadiness() {
           {error}
         </div>
       ) : (
-        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-5">
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-5">
           {checks.map((check) => {
-            const ok = Boolean(status?.[check.key]);
+            const rawValue = Boolean(status?.[check.key]);
+            const ok = check.key === 'legacyGeminiConfigured' || check.key === 'devLoginAvailable'
+              ? !rawValue
+              : rawValue;
             const warningOnly = !check.required && !ok;
             return (
               <div
@@ -93,7 +104,7 @@ export function DemoReadiness() {
                   <span className="text-xs font-medium text-gray-200">{check.label}</span>
                 </div>
                 <div className="mt-2 text-[11px] text-gray-500">
-                  {ok ? 'Ready' : check.required ? 'Needs setup' : 'Tighten after demo URL is final'}
+                  {ok ? 'Ready' : check.required ? 'Needs setup' : check.key === 'legacyGeminiConfigured' ? 'Remove legacy env alias' : check.key === 'devLoginAvailable' ? 'Disable outside local dev' : 'Tighten after demo URL is final'}
                 </div>
               </div>
             );

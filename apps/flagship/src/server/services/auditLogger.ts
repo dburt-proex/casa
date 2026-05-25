@@ -13,7 +13,7 @@ type AuditEntry = {
   requestId?: string | string[];
 };
 
-class AuditLogger {
+export class AuditLogger {
   private pool: pg.Pool | null = null;
   private initialized = false;
 
@@ -56,6 +56,9 @@ class AuditLogger {
   async record(entry: AuditEntry) {
     const pool = this.getPool();
     if (!pool) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('DATABASE_URL is required for durable audit logging in production');
+      }
       console.info('[AUDIT LOG]', JSON.stringify(entry));
       return;
     }

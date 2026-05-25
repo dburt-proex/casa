@@ -7,12 +7,25 @@ const Redis = (RedisLib as any).default || RedisLib;
 // ============================================================================
 // Configuration & Startup Validation
 // ============================================================================
-let rawApiKey = process.env.GEMINI_API_KEY?.trim();
-if (rawApiKey === 'MY_GEMINI_API_KEY') rawApiKey = undefined;
-rawApiKey = rawApiKey || process.env['gemini-casa-api']?.trim() || process.env.GEMINI_CASA_API?.trim();
+const PLACEHOLDER_GEMINI_KEYS = new Set(['MY_GEMINI_API_KEY', 'YOUR_GEMINI_API_KEY', '']);
+
+function normalizeGeminiKey(value?: string) {
+  const trimmed = value?.trim() || '';
+  return PLACEHOLDER_GEMINI_KEYS.has(trimmed) ? undefined : trimmed;
+}
+
+function isProduction() {
+  return process.env.NODE_ENV === 'production';
+}
+
+const canonicalApiKey = normalizeGeminiKey(process.env.GEMINI_API_KEY);
+const legacyApiKey = normalizeGeminiKey(process.env['gemini-casa-api']) || normalizeGeminiKey(process.env.GEMINI_CASA_API);
+const rawApiKey = canonicalApiKey || (!isProduction() ? legacyApiKey : undefined);
 
 if (!rawApiKey) {
-  console.warn('[WARNING] GEMINI_API_KEY or gemini-casa-api is missing or blank. Chat features will not work until configured.');
+  console.warn('[WARNING] GEMINI_API_KEY is missing or blank. Chat features will not work until configured.');
+} else if (!canonicalApiKey && legacyApiKey) {
+  console.warn('[WARNING] Gemini is using a legacy local env alias. Set GEMINI_API_KEY before deploying.');
 } else {
   console.log(`[STARTUP] Gemini API Key configured. Prefix: ${rawApiKey.substring(0, 4)}...`);
 }
@@ -42,8 +55,33 @@ if (!isLocalRedis) {
   console.log('[STARTUP] Using in-memory session storage (Redis not configured or local)');
 }
 
-const memoryStore = new Map<string, string>();
+type MemoryStoreEntry = {
+  data: string;
+  expiresAt: number;
+  updatedAt: number;
+};
+
+const memoryStore = new Map<string, MemoryStoreEntry>();
 const SESSION_TTL_SEC = 60 * 60; // 1 hour
+const MAX_MEMORY_SESSIONS = 100;
+
+function cleanupMemoryStore(now = Date.now()) {
+  for (const [key, entry] of memoryStore.entries()) {
+    if (entry.expiresAt <= now) {
+      memoryStore.delete(key);
+    }
+  }
+
+  while (memoryStore.size > MAX_MEMORY_SESSIONS) {
+    const oldestKey = [...memoryStore.entries()]
+      .sort((a, b) => a[1].updatedAt - b[1].updatedAt)[0]?.[0];
+    if (!oldestKey) break;
+    memoryStore.delete(oldestKey);
+  }
+}
+
+const memoryCleanupInterval = setInterval(() => cleanupMemoryStore(), Math.min(SESSION_TTL_SEC * 1000, 5 * 60 * 1000));
+memoryCleanupInterval.unref?.();
 
 async function getChatHistory(sessionId: string): Promise<Content[]> {
   try {
@@ -55,8 +93,14 @@ async function getChatHistory(sessionId: string): Promise<Content[]> {
     console.warn('[Redis] Failed to get chat history, falling back to memory');
   }
   
-  const data = memoryStore.get(`chat:${sessionId}`);
-  return data ? JSON.parse(data) : [];
+  cleanupMemoryStore();
+  const entry = memoryStore.get(`chat:${sessionId}`);
+  if (!entry) return [];
+  if (entry.expiresAt <= Date.now()) {
+    memoryStore.delete(`chat:${sessionId}`);
+    return [];
+  }
+  return JSON.parse(entry.data);
 }
 
 async function saveChatHistory(sessionId: string, history: Content[]) {
@@ -70,7 +114,14 @@ async function saveChatHistory(sessionId: string, history: Content[]) {
     console.warn('[Redis] Failed to save chat history, falling back to memory');
   }
   
-  memoryStore.set(`chat:${sessionId}`, data);
+  const now = Date.now();
+  cleanupMemoryStore(now);
+  memoryStore.set(`chat:${sessionId}`, {
+    data,
+    expiresAt: now + SESSION_TTL_SEC * 1000,
+    updatedAt: now,
+  });
+  cleanupMemoryStore(now);
 }
 
 // ============================================================================
@@ -102,7 +153,7 @@ function handleGeminiError(error: any, context: string, requestId?: string): nev
   
   if (errMsg.includes('API_KEY_INVALID') || errMsg.includes('API key not valid') || errMsg.includes('UNCONFIGURED_KEY') || errMsg.includes('GEMINI_API_KEY')) {
     console.error(`[Gemini Error] Invalid API Key detected during ${context}. RequestID: ${requestId}`);
-    throw new Error("AI Service configuration error: Missing or invalid GEMINI_API_KEY or gemini-casa-api. Please configure it in the Settings menu.");
+    throw new Error("AI Service configuration error: Missing or invalid GEMINI_API_KEY. Please configure it in the Settings menu.");
   }
 
   console.error(`[Gemini Error] ${context} failed: ${errMsg} RequestID: ${requestId}`, error);
@@ -235,6 +286,14 @@ export async function executeTool(call: any, requestId?: string) {
 export const geminiService = {
   isConfigured() {
     return Boolean(rawApiKey);
+  },
+
+  getConfigStatus() {
+    return {
+      geminiConfigured: Boolean(rawApiKey),
+      canonicalGeminiConfigured: Boolean(canonicalApiKey),
+      legacyGeminiConfigured: Boolean(legacyApiKey),
+    };
   },
 
   async handleChat(sessionId: string, message: string, requestId?: string) {

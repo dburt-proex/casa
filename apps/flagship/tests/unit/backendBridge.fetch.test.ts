@@ -9,8 +9,8 @@
  *  - Oversized response body text
  * The applyPolicy method is a compile-time stub that always throws.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { backendBridge } from '../../src/server/services/backendBridge.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { backendBridge, getBackendBridgeConfigStatus } from '../../src/server/services/backendBridge.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -45,6 +45,20 @@ function mockFetchResponse(overrides: {
 
 beforeEach(() => {
   vi.unstubAllGlobals();
+  delete process.env.CASA_GOVERNANCE_API_URL;
+  delete process.env.CASA_API_URL;
+  delete process.env.BACKEND_API_URL;
+  delete process.env.CASA_GOVERNANCE_ALLOWED_HOSTS;
+  process.env.NODE_ENV = 'test';
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  delete process.env.CASA_GOVERNANCE_API_URL;
+  delete process.env.CASA_API_URL;
+  delete process.env.BACKEND_API_URL;
+  delete process.env.CASA_GOVERNANCE_ALLOWED_HOSTS;
+  process.env.NODE_ENV = 'test';
 });
 
 // ---------------------------------------------------------------------------
@@ -122,7 +136,72 @@ describe('fetchWithTimeout — oversized response body text', () => {
 });
 
 // ---------------------------------------------------------------------------
-// applyPolicy — compile-time stub
+// fetchWithTimeout - non-JSON success body
+// ---------------------------------------------------------------------------
+
+describe('fetchWithTimeout - non-JSON success body', () => {
+  it('fails safely when the governance API returns a non-JSON 200 response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: { get: () => null },
+        text: async () => 'OK',
+      })
+    );
+
+    await expect(backendBridge.getDashboard()).rejects.toThrow(/Expected JSON response/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// backend URL resolution
+// ---------------------------------------------------------------------------
+
+describe('backendBridge production URL resolution', () => {
+  it('rejects pasted KEY=value backend URL values', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.CASA_GOVERNANCE_API_URL = 'CASA_GOVERNANCE_API_URL=https://casa-governance-api.onrender.com';
+
+    expect(getBackendBridgeConfigStatus()).toEqual({
+      backendConfigured: true,
+      backendUrlValid: false,
+    });
+    await expect(backendBridge.getDashboard()).rejects.toThrow(/paste only the URL/);
+  });
+
+  it('rejects unapproved production backend hosts', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.CASA_GOVERNANCE_API_URL = 'https://example.com';
+
+    expect(getBackendBridgeConfigStatus().backendUrlValid).toBe(false);
+    await expect(backendBridge.getDashboard()).rejects.toThrow(/Invalid CASA_GOVERNANCE_API_URL host/);
+  });
+
+  it('allows the Render internal service hostname in production', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.CASA_GOVERNANCE_API_URL = 'casa-governance-api:5000';
+    mockFetchResponse({
+      body: { status: 'healthy', activePolicies: 1, decisions24h: 2, boundaryAlerts: 0 },
+    });
+
+    await expect(backendBridge.getDashboard()).resolves.toEqual({
+      activePolicies: 1,
+      decisions24h: 2,
+      boundaryAlerts: 0,
+      systemStatus: 'healthy',
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      'http://casa-governance-api:5000/dashboard',
+      expect.objectContaining({ headers: {} })
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applyPolicy - compile-time stub
 // ---------------------------------------------------------------------------
 
 describe('backendBridge.applyPolicy', () => {
