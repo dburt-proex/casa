@@ -7,11 +7,14 @@ import { authenticate } from '../middleware/auth.js';
 import {
   ChatRequestSchema,
   PolicyDryRunRequestSchema,
-  AdminApplyPolicySchema
+  AdminApplyPolicySchema,
+  GovernanceSprintCreateSchema,
+  GovernanceSprintUpdateSchema,
 } from '../schemas/contracts.js';
 import { opsMetrics } from '../services/opsMetrics.js';
 import rateLimit from 'express-rate-limit';
 import { isDevLoginEnabled, isProduction, redactSecret, getJwtSecretBytes } from '../authConfig.js';
+import { governanceSprintStore } from '../services/governanceSprintStore.js';
 
 export const apiRouter = Router();
 
@@ -189,6 +192,56 @@ apiRouter.post('/policy/analyze', requireAdmin, async (req, res) => {
     console.error('[API] Policy analysis error:', error.message);
     const status = error.message?.includes('GEMINI_API_KEY') || error.message?.includes('AI policy analysis is unavailable') ? 503 : 500;
     res.status(status).json({ error: status === 503 ? error.message : 'Failed to analyze policy', details: error.message });
+  }
+});
+
+apiRouter.post('/governance-sprints', authenticate, async (req, res) => {
+  try {
+    const payload = GovernanceSprintCreateSchema.parse(req.body);
+    const { sprint, created } = await governanceSprintStore.createOrGet(payload, (req as any).user);
+    res.status(created ? 201 : 200).json(sprint);
+  } catch (error: any) {
+    if (error?.name === 'ZodError') {
+      return res.status(400).json({ error: 'Invalid governance sprint request', details: error.issues });
+    }
+    const status = error?.message?.includes('DATABASE_URL is required') ? 503 : 500;
+    res.status(status).json({ error: 'Governance sprint create failed', message: error.message });
+  }
+});
+
+apiRouter.get('/governance-sprints', authenticate, async (_req, res) => {
+  try {
+    const sprints = await governanceSprintStore.list();
+    res.json(sprints);
+  } catch (error: any) {
+    const status = error?.message?.includes('DATABASE_URL is required') ? 503 : 500;
+    res.status(status).json({ error: 'Governance sprint list failed', message: error.message });
+  }
+});
+
+apiRouter.get('/governance-sprints/:id', authenticate, async (req, res) => {
+  try {
+    const sprint = await governanceSprintStore.get(req.params.id);
+    if (!sprint) return res.status(404).json({ error: 'Not found', message: 'Governance sprint not found' });
+    res.json(sprint);
+  } catch (error: any) {
+    const status = error?.message?.includes('DATABASE_URL is required') ? 503 : 500;
+    res.status(status).json({ error: 'Governance sprint lookup failed', message: error.message });
+  }
+});
+
+apiRouter.patch('/governance-sprints/:id', requireAdmin, async (req, res) => {
+  try {
+    const payload = GovernanceSprintUpdateSchema.parse(req.body);
+    const sprint = await governanceSprintStore.update(req.params.id, payload);
+    if (!sprint) return res.status(404).json({ error: 'Not found', message: 'Governance sprint not found' });
+    res.json(sprint);
+  } catch (error: any) {
+    if (error?.name === 'ZodError') {
+      return res.status(400).json({ error: 'Invalid governance sprint update', details: error.issues });
+    }
+    const status = error?.message?.includes('DATABASE_URL is required') ? 503 : 500;
+    res.status(status).json({ error: 'Governance sprint update failed', message: error.message });
   }
 });
 

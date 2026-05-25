@@ -60,3 +60,44 @@ export const AdminApplyPolicySchema = z.object({
   confirmationCode: z.string().max(100),
   reason: z.string().max(1000),
 });
+
+export const GovernanceSprintStatusSchema = z.enum(['REQUESTED', 'ACTIVE', 'COMPLETED', 'CANCELLED']);
+export const GovernanceSprintPhaseSchema = z.enum([
+  'Intake',
+  'Workflow Map',
+  'Controls',
+  'Review Gate',
+  'Evidence',
+  'Handoff',
+]);
+
+export const GovernanceSprintChecklistItemSchema = z.object({
+  id: z.string().max(100),
+  label: z.string().max(200),
+  complete: z.boolean(),
+});
+
+export const GovernanceSprintEvidenceItemSchema = z.object({
+  id: z.string().max(100),
+  label: z.string().max(200),
+  value: z.string().max(1000).optional(),
+  href: z.string().max(500).optional(),
+}).passthrough();
+
+export const GovernanceSprintCreateSchema = z.object({
+  decisionId: z.string().min(1).max(100),
+  workflowSummary: z.string().min(1).max(500),
+  decisionSnapshot: z.record(z.string(), z.any()).default({}),
+  durationDays: z.union([z.literal(7), z.literal(14)]).default(7),
+  notes: z.string().max(2000).optional(),
+  source: z.enum(['workflow_intake', 'review_gate', 'manual']).default('manual'),
+});
+
+export const GovernanceSprintUpdateSchema = z.object({
+  status: GovernanceSprintStatusSchema.optional(),
+  phase: GovernanceSprintPhaseSchema.optional(),
+  owner: z.string().max(200).nullable().optional(),
+  notes: z.string().max(4000).optional(),
+  checklist: z.array(GovernanceSprintChecklistItemSchema).max(20).optional(),
+  evidence: z.array(GovernanceSprintEvidenceItemSchema).max(50).optional(),
+});

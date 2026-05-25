@@ -12,6 +12,7 @@ __pycache__/
 .pytest_cache/
 .venv/
 .tools/
+.local/
 
 ledger.log
 apps/control-plane/ledger.log

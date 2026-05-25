@@ -17,6 +17,7 @@ test('operator console handles auth, sidebar navigation, workflow intake, and po
     'Workflow Intake',
     'System Dashboard',
     'Review Gate',
+    'Governance Sprint',
     'Policy Lab',
     'Boundary Stress',
     'Audit Ledger',
@@ -35,6 +36,11 @@ test('operator console handles auth, sidebar navigation, workflow intake, and po
   await page.getByRole('button', { name: 'Evaluate with CASA' }).click();
   await expect(page.getByText('Why CASA Decided This')).toBeVisible();
   await expect(page.getByText('Reason Code')).toBeVisible();
+  await page.getByRole('button', { name: 'Create Governance Sprint' }).click();
+  await expect(page.getByText(/SPR-/)).toBeVisible();
+  await page.getByRole('button', { name: 'Open Governance Sprint' }).click();
+  await expect(page.getByText('Governance Sprint Workspace')).toBeVisible();
+  await expect(page.getByText('Implementation Checklist')).toBeVisible();
 
   await page.getByRole('button', { name: 'Policy Lab' }).click();
   await page.getByLabel('Target Policy').selectOption('POL-105');

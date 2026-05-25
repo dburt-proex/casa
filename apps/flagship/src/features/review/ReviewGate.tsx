@@ -1,22 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../../lib/api';
-import { ShieldAlert, CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
+import { ShieldAlert, CheckCircle, XCircle, AlertTriangle, RefreshCw, CalendarDays, ArrowRight } from 'lucide-react';
 import { ExplainButton } from '../../components/ExplainButton';
 import { useAuth } from '../../contexts/AuthContext';
+import type { GovernanceSprint } from '../../types';
 
-export function ReviewGate() {
+type ReviewGateProps = {
+  onOpenSprintWorkspace?: (sprintId: string) => void;
+};
+
+export function ReviewGate({ onOpenSprintWorkspace }: ReviewGateProps) {
   const { isAdmin } = useAuth();
   const [flagged, setFlagged] = useState<any[]>([]);
+  const [sprints, setSprints] = useState<GovernanceSprint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sprintError, setSprintError] = useState('');
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [creatingSprintId, setCreatingSprintId] = useState<string | null>(null);
+  const [recentReviews, setRecentReviews] = useState<Array<{ id: string; action: string; finalDecision?: string; notes: string; reviewedAt: string }>>([]);
+
+  const sprintByDecisionId = useMemo(() => {
+    return new Map(sprints.map((sprint) => [sprint.decisionId, sprint]));
+  }, [sprints]);
 
   const fetchFlagged = async () => {
     setLoading(true);
+    setError('');
+    setSprintError('');
     try {
       const data = await api.get('/decisions/flagged') as any;
       setFlagged(data);
+      try {
+        const sprintData = await api.get<GovernanceSprint[]>('/governance-sprints');
+        setSprints(sprintData);
+      } catch (err: any) {
+        setSprintError(err.message || 'Failed to load linked governance sprints');
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -32,10 +53,21 @@ export function ReviewGate() {
     if (!isAdmin) return;
     setReviewingId(id);
     try {
-      await api.post(`/decisions/${id}/review`, {
+      const notes = reviewNotes[id]?.trim() || `Reviewed from CASA Flagship as ${action}`;
+      const result = await api.post<any>(`/decisions/${id}/review`, {
         action,
-        notes: reviewNotes[id]?.trim() || `Reviewed from CASA Flagship as ${action}`
+        notes
       });
+      setRecentReviews((current) => [
+        {
+          id,
+          action,
+          finalDecision: result.final_decision || result.finalDecision,
+          notes,
+          reviewedAt: new Date().toISOString(),
+        },
+        ...current.slice(0, 4),
+      ]);
       setReviewNotes((current) => {
         const next = { ...current };
         delete next[id];
@@ -46,6 +78,29 @@ export function ReviewGate() {
       alert(`Failed to ${action}: ${err.message}`);
     } finally {
       setReviewingId(null);
+    }
+  };
+
+  const handleCreateSprint = async (decision: any) => {
+    setCreatingSprintId(decision.id);
+    setSprintError('');
+    try {
+      const sprint = await api.post<GovernanceSprint>('/governance-sprints', {
+        decisionId: decision.id,
+        workflowSummary: decision.action || `Review decision ${decision.id}`,
+        durationDays: 7,
+        source: 'review_gate',
+        notes: 'Created from Review Gate pending decision.',
+        decisionSnapshot: decision,
+      });
+      setSprints((current) => {
+        const withoutExisting = current.filter((item) => item.id !== sprint.id && item.decisionId !== sprint.decisionId);
+        return [sprint, ...withoutExisting];
+      });
+    } catch (err: any) {
+      setSprintError(err.message || 'Failed to create governance sprint');
+    } finally {
+      setCreatingSprintId(null);
     }
   };
 
@@ -83,6 +138,27 @@ export function ReviewGate() {
         </div>
       )}
 
+      {sprintError && (
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          {sprintError}
+        </div>
+      )}
+
+      {recentReviews.length > 0 && (
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+          <div className="text-sm font-medium text-emerald-200">Recent review history</div>
+          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+            {recentReviews.map((review) => (
+              <div key={`${review.id}-${review.reviewedAt}`} className="rounded-lg border border-emerald-500/15 bg-[#0a0a0c] p-3 text-xs text-gray-300">
+                <div className="font-mono text-emerald-300">{review.id}</div>
+                <div className="mt-1">{review.action} recorded as {review.finalDecision || 'reviewed'}</div>
+                <div className="mt-1 text-gray-500">{formatTimestamp(review.reviewedAt)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {flagged.length === 0 ? (
         <div className="p-12 text-center border border-gray-800/60 rounded-xl bg-[#12121a] text-gray-500">
           <CheckCircle className="w-12 h-12 mx-auto mb-4 text-emerald-500/50" />
@@ -91,7 +167,9 @@ export function ReviewGate() {
         </div>
       ) : (
         <div className="space-y-4">
-          {flagged.map(decision => (
+          {flagged.map(decision => {
+            const linkedSprint = sprintByDecisionId.get(decision.id);
+            return (
             <div key={decision.id} className="p-6 rounded-xl bg-[#12121a] border border-amber-500/20 shadow-lg relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
               
@@ -102,10 +180,38 @@ export function ReviewGate() {
                     <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-xs font-medium border border-amber-500/20">
                       PENDING REVIEW
                     </span>
+                    {linkedSprint && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 text-xs font-medium border border-emerald-500/20">
+                        {linkedSprint.status} SPRINT
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-gray-400 font-mono">{formatTimestamp(decision.timestamp)}</div>
                 </div>
-                <ExplainButton context={`Review Gate Decision ${decision.id}`} data={decision} />
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  {linkedSprint ? (
+                    <button
+                      type="button"
+                      onClick={() => onOpenSprintWorkspace?.(linkedSprint.id)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-200 hover:bg-emerald-500/15"
+                    >
+                      <CalendarDays className="h-3.5 w-3.5" />
+                      Open Sprint
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleCreateSprint(decision)}
+                      disabled={creatingSprintId === decision.id}
+                      className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-200 hover:bg-emerald-500/15 disabled:opacity-50"
+                    >
+                      <CalendarDays className="h-3.5 w-3.5" />
+                      {creatingSprintId === decision.id ? 'Creating...' : 'Create Sprint'}
+                    </button>
+                  )}
+                  <ExplainButton context={`Review Gate Decision ${decision.id}`} data={decision} />
+                </div>
               </div>
 
               <div className="grid grid-cols-4 gap-4 mb-6">
@@ -176,7 +282,8 @@ export function ReviewGate() {
                 </button>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
     </div>

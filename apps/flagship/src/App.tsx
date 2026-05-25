@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/react';
-import { Activity, Shield, History, Play, MessageSquare, AlertTriangle, LogOut, ShieldAlert, Terminal, ClipboardList, UserCog, LockKeyhole } from 'lucide-react';
+import { Activity, Shield, History, Play, MessageSquare, AlertTriangle, LogOut, ShieldAlert, Terminal, ClipboardList, UserCog, LockKeyhole, CalendarDays } from 'lucide-react';
 import { cn } from './lib/utils';
 import { PolicyLab } from './features/policy-lab/PolicyLab';
 import { OperatorChat } from './features/chat/OperatorChat';
@@ -10,11 +10,13 @@ import { DecisionReplay } from './features/replay/DecisionReplay';
 import { ReviewGate } from './features/review/ReviewGate';
 import { OpsMetricsView } from './components/OpsMetricsView';
 import { WorkflowIntake } from './features/intake/WorkflowIntake';
+import { SprintWorkspace } from './features/sprints/SprintWorkspace';
 import { useAuth } from './contexts/AuthContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null);
   const { isAuthenticated, login, logout, user, isAdmin, isAuthLoading, authError } = useAuth();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const clerkEnabled = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -108,9 +110,25 @@ export default function App() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'intake': return <WorkflowIntake onOpenReviewGate={() => setActiveTab('review')} />;
+      case 'intake': return (
+        <WorkflowIntake
+          onOpenReviewGate={() => setActiveTab('review')}
+          onOpenSprintWorkspace={(sprintId) => {
+            setSelectedSprintId(sprintId);
+            setActiveTab('sprints');
+          }}
+        />
+      );
       case 'dashboard': return <Dashboard />;
-      case 'review': return <ReviewGate />;
+      case 'review': return (
+        <ReviewGate
+          onOpenSprintWorkspace={(sprintId) => {
+            setSelectedSprintId(sprintId);
+            setActiveTab('sprints');
+          }}
+        />
+      );
+      case 'sprints': return <SprintWorkspace selectedSprintId={selectedSprintId} />;
       case 'dry-run': return <PolicyLab />;
       case 'analysis': return <BoundaryStress />;
       case 'history': return <DecisionReplay />;
@@ -153,6 +171,7 @@ export default function App() {
             { id: 'intake', icon: ClipboardList, label: 'Workflow Intake' },
             { id: 'dashboard', icon: Activity, label: 'System Dashboard' },
             { id: 'review', icon: ShieldAlert, label: 'Review Gate' },
+            { id: 'sprints', icon: CalendarDays, label: 'Governance Sprint' },
             { id: 'dry-run', icon: Play, label: 'Policy Lab' },
             { id: 'analysis', icon: AlertTriangle, label: 'Boundary Stress' },
             { id: 'history', icon: History, label: 'Audit Ledger' },
