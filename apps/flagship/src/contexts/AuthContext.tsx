@@ -4,6 +4,7 @@ import { useAuth as useClerkAuth, useUser } from '@clerk/react';
 interface User {
   email: string;
   role: string;
+  provider?: 'clerk' | 'dev';
 }
 
 interface AuthContextType {
@@ -13,6 +14,8 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isAuthLoading: boolean;
+  authError: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +30,7 @@ async function fetchServerUser(token: string): Promise<User | null> {
     return {
       email: data.email || data.sub || 'authenticated-user',
       role: data.role === 'admin' ? 'admin' : 'operator',
+      provider: data.provider === 'dev' ? 'dev' : 'clerk',
     };
   } catch {
     return null;
@@ -39,6 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clerkUser = useUser();
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isSyncingClerk, setIsSyncingClerk] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const clerkEmail = clerkUser.user?.primaryEmailAddress?.emailAddress || clerkUser.user?.username || clerkUser.user?.id;
   const clerkRole = clerkUser.user?.publicMetadata?.role === 'admin' ? 'admin' : 'operator';
 
@@ -69,28 +75,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [clerkConfigured]);
 
   useEffect(() => {
-    if (!clerkConfigured || !clerkAuth.isLoaded) return;
+    if (!clerkConfigured) return;
+
+    if (!clerkAuth.isLoaded || !clerkUser.isLoaded) {
+      setIsSyncingClerk(true);
+      return;
+    }
 
     if (!clerkAuth.isSignedIn || !clerkUser.user) {
       setToken(null);
       setUser(null);
+      setIsSyncingClerk(false);
+      setAuthError(null);
       return;
     }
 
+    let cancelled = false;
     const syncClerkSession = async () => {
-      const clerkToken = await clerkAuth.getToken();
-      if (!clerkToken) return;
-      const serverUser = await fetchServerUser(clerkToken);
+      setIsSyncingClerk(true);
+      setAuthError(null);
+      try {
+        const clerkToken = await clerkAuth.getToken();
+        if (!clerkToken) {
+          throw new Error('Missing Clerk session token');
+        }
+        const serverUser = await fetchServerUser(clerkToken);
+        if (cancelled) return;
 
-      setToken((current) => current === clerkToken ? current : clerkToken);
-      setUser((current) => {
-        const nextUser = serverUser || { email: clerkEmail || clerkUser.user!.id, role: clerkRole };
-        if (current?.email === nextUser.email && current.role === nextUser.role) return current;
-        return nextUser;
-      });
+        setToken((current) => current === clerkToken ? current : clerkToken);
+        setUser((current) => {
+          const nextUser = serverUser || { email: clerkEmail || clerkUser.user!.id, role: clerkRole, provider: 'clerk' as const };
+          if (current?.email === nextUser.email && current.role === nextUser.role && current.provider === nextUser.provider) return current;
+          return nextUser;
+        });
+      } catch (error) {
+        if (cancelled) return;
+        console.error('[Auth] Failed to finish Clerk session sync:', error);
+        setToken(null);
+        setUser(null);
+        setAuthError('Sign-in completed, but CASA could not finish session verification. Please refresh or sign out and sign in again.');
+      } finally {
+        if (!cancelled) {
+          setIsSyncingClerk(false);
+        }
+      }
     };
 
     void syncClerkSession();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     clerkAuth.getToken,
     clerkAuth.isLoaded,
@@ -98,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clerkConfigured,
     clerkEmail,
     clerkRole,
+    clerkUser.isLoaded,
     clerkUser.user?.id
   ]);
 
@@ -139,8 +175,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       login,
       logout,
-      isAuthenticated: !!token,
-      isAdmin: user?.role === 'admin'
+      isAuthenticated: clerkConfigured ? Boolean(clerkAuth.isSignedIn && token && user) : !!token,
+      isAdmin: user?.role === 'admin',
+      isAuthLoading: clerkConfigured ? (!clerkAuth.isLoaded || !clerkUser.isLoaded || Boolean(clerkAuth.isSignedIn && isSyncingClerk && !token)) : false,
+      authError
     }}>
       {children}
     </AuthContext.Provider>

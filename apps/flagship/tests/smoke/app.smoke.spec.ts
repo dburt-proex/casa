@@ -10,6 +10,8 @@ test('operator console handles auth, sidebar navigation, workflow intake, and po
 
   await expect(page.getByRole('button', { name: 'Workflow Intake' })).toBeVisible();
   await expect(page.getByText('Demo Readiness')).toBeVisible();
+  await expect(page.getByText('Admin profile active').first()).toBeVisible();
+  await expect(page.getByText('Full demo control')).toBeVisible();
 
   for (const navItem of [
     'Workflow Intake',
