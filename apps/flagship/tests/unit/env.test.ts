@@ -16,10 +16,11 @@ describe('shouldLoadEnvExample', () => {
 
   it('does not load .env.example defaults when NODE_ENV is unset', () => {
     const previousNodeEnv = process.env.NODE_ENV;
-    delete process.env.NODE_ENV;
-
-    expect(shouldLoadEnvExample()).toBe(false);
-
-    process.env.NODE_ENV = previousNodeEnv;
+    try {
+      delete process.env.NODE_ENV;
+      expect(shouldLoadEnvExample()).toBe(false);
+    } finally {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
   });
 });
