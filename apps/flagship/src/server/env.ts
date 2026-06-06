@@ -4,7 +4,12 @@ import fs from 'fs';
 dotenv.config({ path: '.env.local' });
 dotenv.config();
 
-if (process.env.NODE_ENV !== 'production') {
+export function shouldLoadEnvExample(nodeEnv = process.env.NODE_ENV): boolean {
+  const normalizedNodeEnv = nodeEnv?.trim().toLowerCase();
+  return normalizedNodeEnv === 'development' || normalizedNodeEnv === 'test';
+}
+
+if (shouldLoadEnvExample()) {
   try {
     const envExample = dotenv.parse(fs.readFileSync('.env.example'));
     for (const key in envExample) {
