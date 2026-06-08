@@ -101,7 +101,7 @@ npm run build
 
 Use this checklist for the launch-state items tracked in the CASA Monorepo Full Review Batch Plan:
 
-- Manually deploy `casa-flagship` from the current `main` branch. Render auto-deploy remains off, so keep using a manual deploy flow until a fresh deploy key is installed.
+- Manually deploy `casa-flagship` from the current `main` branch. The root `render.yaml` keeps the Render Blueprint auto-deploy setting off, so continue using a manual deploy flow until a fresh deploy key is installed.
 - Verify the live Flagship bundle shows:
   - `Demo Readiness`
   - `Load ALLOW demo`
