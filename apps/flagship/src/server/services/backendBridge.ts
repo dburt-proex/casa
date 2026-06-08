@@ -83,7 +83,7 @@ export function resolveBackendBaseUrl(): BackendUrlResolution {
     throw new Error(`Invalid ${candidate.source || 'backend URL'} value: paste only the URL, not KEY=value`);
   }
 
-  const rawUrl = /^https?:\/\//i.test(candidate.raw) ? candidate.raw : `http://${candidate.raw}`;
+  const rawUrl = /^[a-z][a-z0-9+.-]*:\/\//i.test(candidate.raw) ? candidate.raw : `http://${candidate.raw}`;
   let parsed: URL;
   try {
     parsed = new URL(rawUrl);

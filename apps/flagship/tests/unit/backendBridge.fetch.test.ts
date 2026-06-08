@@ -95,6 +95,23 @@ describe('fetchWithTimeout — non-OK HTTP status', () => {
       backendBridge.runDryRun({ policyId: 'P', parameters: { policy_candidate_path: 'policy-candidates/P.json' }, environment: 'staging' })
     ).rejects.toThrow('Backend Bridge Error: 401 Unauthorized');
   });
+
+  it('preserves plain-text error details from non-JSON upstream responses', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+        headers: { get: () => null },
+        text: async () => 'upstream returned HTML',
+      })
+    );
+
+    await expect(backendBridge.getDashboard()).rejects.toThrow(
+      'Backend Bridge Error: 502 Bad Gateway - upstream returned HTML'
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -180,6 +197,22 @@ describe('backendBridge production URL resolution', () => {
     await expect(backendBridge.getDashboard()).rejects.toThrow(/Invalid CASA_GOVERNANCE_API_URL host/);
   });
 
+  it('rejects malformed production backend URLs', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.CASA_GOVERNANCE_API_URL = 'http://';
+
+    expect(getBackendBridgeConfigStatus().backendUrlValid).toBe(false);
+    await expect(backendBridge.getDashboard()).rejects.toThrow(/must be a valid HTTP\(S\) URL/);
+  });
+
+  it('rejects non-http production backend URLs', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.CASA_GOVERNANCE_API_URL = 'ftp://casa-governance-api.onrender.com';
+
+    expect(getBackendBridgeConfigStatus().backendUrlValid).toBe(false);
+    await expect(backendBridge.getDashboard()).rejects.toThrow(/only HTTP\(S\) URLs are supported/);
+  });
+
   it('allows the Render internal service hostname in production', async () => {
     process.env.NODE_ENV = 'production';
     process.env.CASA_GOVERNANCE_API_URL = 'casa-governance-api:5000';
@@ -197,6 +230,41 @@ describe('backendBridge production URL resolution', () => {
       'http://casa-governance-api:5000/dashboard',
       expect.objectContaining({ headers: {} })
     );
+  });
+
+  it('allows the Render public hostname in production', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.CASA_GOVERNANCE_API_URL = 'https://casa-governance-api.onrender.com';
+    mockFetchResponse({
+      body: { status: 'healthy', activePolicies: 2, decisions24h: 3, boundaryAlerts: 1 },
+    });
+
+    await expect(backendBridge.getDashboard()).resolves.toEqual({
+      activePolicies: 2,
+      decisions24h: 3,
+      boundaryAlerts: 1,
+      systemStatus: 'healthy',
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      'https://casa-governance-api.onrender.com/dashboard',
+      expect.objectContaining({ headers: {} })
+    );
+  });
+
+  it('allows explicitly configured production hosts', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.CASA_GOVERNANCE_API_URL = 'https://governance.internal';
+    process.env.CASA_GOVERNANCE_ALLOWED_HOSTS = 'governance.internal';
+    mockFetchResponse({
+      body: { status: 'healthy', activePolicies: 4, decisions24h: 5, boundaryAlerts: 0 },
+    });
+
+    await expect(backendBridge.getDashboard()).resolves.toEqual({
+      activePolicies: 4,
+      decisions24h: 5,
+      boundaryAlerts: 0,
+      systemStatus: 'healthy',
+    });
   });
 });
 

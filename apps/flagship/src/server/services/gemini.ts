@@ -330,6 +330,10 @@ export const geminiService = {
       while (response.functionCalls && response.functionCalls.length > 0) {
         if (loopCount >= MAX_LOOPS) {
           console.warn('[Gemini] Max tool recursion depth reached. Breaking loop.');
+          response = {
+            ...response,
+            text: response.text || 'The AI service stopped after too many tool calls. Please refine your request and try again.',
+          };
           break;
         }
         loopCount++;
