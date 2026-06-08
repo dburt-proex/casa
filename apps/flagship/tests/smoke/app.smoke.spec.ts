@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+const governanceApiHealthUrl = `${process.env.CASA_GOVERNANCE_API_URL || 'http://127.0.0.1:5000'}/health`;
+
 test('flagship and governance API health endpoints respond', async ({ request }) => {
   const flagshipHealth = await request.get('/health');
   expect(flagshipHealth.ok()).toBeTruthy();
@@ -9,7 +11,7 @@ test('flagship and governance API health endpoints respond', async ({ request })
   });
   await expect
     .poll(async () => {
-      const response = await request.get('http://127.0.0.1:5000/health');
+      const response = await request.get(governanceApiHealthUrl);
       return response.status();
     })
     .toBe(200);
