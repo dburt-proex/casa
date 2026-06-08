@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
 
-const governanceApiHealthUrl = `${process.env.CASA_GOVERNANCE_API_URL || 'http://127.0.0.1:5000'}/health`;
-
 test('flagship and governance API health endpoints respond', async ({ request }) => {
+  const governanceApiHealthUrl = `${process.env.CASA_GOVERNANCE_API_URL || 'http://127.0.0.1:5000'}/health`;
   const flagshipHealth = await request.get('/health');
   expect(flagshipHealth.ok()).toBeTruthy();
   await expect(flagshipHealth.json()).resolves.toMatchObject({
