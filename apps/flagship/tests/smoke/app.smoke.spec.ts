@@ -1,5 +1,17 @@
 import { expect, test } from '@playwright/test';
 
+test('flagship health endpoint reports service status', async ({ request }) => {
+  const response = await request.get('/health');
+  expect(response.ok()).toBe(true);
+  expect(await response.json()).toEqual({
+    status: 'ok',
+    service: 'casa-flagship',
+    config: {
+      geminiConfigured: false,
+    },
+  });
+});
+
 test('operator console handles auth, sidebar navigation, workflow intake, and policy lab', async ({ page }) => {
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -50,4 +62,16 @@ test('operator console handles auth, sidebar navigation, workflow intake, and po
   await expect(page.getByText('Approval Workflow Pending')).toBeDisabled();
 
   expect(pageErrors).toEqual([]);
+});
+
+test('operator console shows read-only demo mode messaging on restricted workflows', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Login as Operator' })).toBeVisible();
+  await page.getByRole('button', { name: 'Login as Operator' }).click();
+
+  await page.getByRole('button', { name: 'Review Gate' }).click();
+  await expect(page.getByText('Read-only client demo mode: operators can inspect review evidence, but only admins can approve or halt decisions.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Governance Sprint' }).click();
+  await expect(page.getByText('Read-only client demo mode: operators can request and view sprints, but only admins can activate, advance, complete, or cancel them.')).toBeVisible();
 });
