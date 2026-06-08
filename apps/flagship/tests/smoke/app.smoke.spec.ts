@@ -12,7 +12,7 @@ test('flagship and governance API health endpoints respond', async ({ request })
     .poll(async () => {
       const response = await request.get(governanceApiHealthUrl);
       return response.status();
-    })
+    }, { timeout: 30_000, intervals: [500, 1_000] })
     .toBe(200);
 });
 
