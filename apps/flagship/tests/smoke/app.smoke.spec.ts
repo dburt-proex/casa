@@ -1,13 +1,18 @@
 import { expect, test } from '@playwright/test';
 
 test('flagship and governance API health endpoints respond', async ({ request }) => {
+  const governanceApiHealthUrl = `${process.env.CASA_GOVERNANCE_API_URL || 'http://127.0.0.1:5000'}/health`;
   const flagshipHealth = await request.get('/health');
   expect(flagshipHealth.ok()).toBeTruthy();
+  await expect(flagshipHealth.json()).resolves.toMatchObject({
+    status: 'ok',
+    service: 'casa-flagship',
+  });
   await expect
     .poll(async () => {
-      const response = await request.get('http://127.0.0.1:5000/health');
+      const response = await request.get(governanceApiHealthUrl);
       return response.status();
-    })
+    }, { timeout: 30_000, intervals: [500, 1_000] })
     .toBe(200);
 });
 
@@ -78,4 +83,17 @@ test('admin login handles workflow intake and policy dry run while apply stays b
   );
 
   expect(pageErrors).toEqual([]);
+});
+
+test('operator console shows read-only demo mode messaging on restricted workflows', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Login as Operator' })).toBeVisible();
+  await page.getByRole('button', { name: 'Login as Operator' }).click();
+
+  await page.getByRole('button', { name: 'Review Gate' }).click();
+  await expect(page.getByText(/Read-only client demo mode:/)).toBeVisible();
+  await expect(page.getByText(/operators can inspect review evidence/)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Governance Sprint' }).click();
+  await expect(page.getByText(/operators can request and view sprints/)).toBeVisible();
 });

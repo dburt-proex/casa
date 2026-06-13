@@ -14,7 +14,7 @@ export default defineConfig({
     {
       command: 'cd ../control-plane && if [ ! -x .venv/bin/python ]; then python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements-dev.txt; fi && . .venv/bin/activate && python -m uvicorn governance_api:app --host 127.0.0.1 --port 5000',
       url: 'http://127.0.0.1:5000/health',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
       timeout: 120_000,
     },
     {

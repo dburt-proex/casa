@@ -96,3 +96,19 @@ npm run lint
 npm test
 npm run build
 ```
+
+## Batch 0 Launch-State Checklist
+
+Use this checklist for the launch-state items tracked in the CASA Monorepo Full Review Batch Plan:
+
+- Manually deploy `casa-flagship` from the current `main` branch. The Render Blueprint config in `/render.yaml` keeps auto-deploy off, so continue using a manual deploy flow until a fresh deploy key is installed.
+- Verify the live Flagship bundle shows:
+  - `Demo Readiness`
+  - `Load ALLOW demo`
+  - `Load REVIEW demo`
+  - `Load HALT demo`
+  - `Read-only client demo mode`
+- Confirm both health endpoints after deploy:
+  - Flagship: `GET https://<flagship-host>/health` → expect `{"status":"ok","service":"casa-flagship",...}`
+  - Governance API: `GET https://<governance-host>/health` → expect `{"status":"CASA Governance API running"}`
+- Record the deployed commit SHA, live URLs, screenshots, and `/health` responses in the Notion hardening review page (`<insert Notion hardening review URL>`) as the post-deploy evidence set.
