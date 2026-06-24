@@ -246,15 +246,6 @@ def review_decision(decision_id: str, request: ReviewDecisionRequest):
     }
 
 
-@app.get("/decision-replay/{decision_id}")
-def replay_single_decision(decision_id: str):
-    try:
-        engine = DecisionReplayEngine()
-        return engine.replay_decision(decision_id)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-
-
 class DecisionReplayBatchRequest(BaseModel):
     agent_filter: str = None
     action_filter: str = None
@@ -281,6 +272,15 @@ def replay_all_decisions():
         return engine.replay_all_decisions()
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Ledger not found")
+
+
+@app.get("/decision-replay/{decision_id}")
+def replay_single_decision(decision_id: str):
+    try:
+        engine = DecisionReplayEngine()
+        return engine.replay_decision(decision_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.get("/boundary-stress")
