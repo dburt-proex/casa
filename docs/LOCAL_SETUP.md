@@ -2,6 +2,19 @@
 
 This guide is the fastest reliable way to run CASA on a local machine.
 
+## Before you start
+
+You must run the helper scripts **from the cloned repo root**, not from `C:\Windows\System32`.
+
+Example:
+
+```powershell
+cd C:\path\to\casa
+powershell -ExecutionPolicy Bypass -File .\scripts\start-local.ps1
+```
+
+If you are not sure where the repo is, find it first and then `cd` into that folder.
+
 ## What runs locally
 
 CASA has two primary local components:
@@ -18,6 +31,7 @@ Run them in separate terminals.
 ### macOS / Linux
 
 ```bash
+cd /path/to/casa
 bash scripts/start-local.sh
 ```
 
@@ -31,6 +45,7 @@ npm run dev
 ### Windows PowerShell
 
 ```powershell
+cd C:\path\to\casa
 powershell -ExecutionPolicy Bypass -File .\scripts\start-local.ps1
 ```
 
@@ -134,6 +149,16 @@ npm run build
 ---
 
 ## Common friction points
+
+### Script path does not exist
+
+You are probably not in the repo root. Run:
+
+```powershell
+pwd
+```
+
+If the current folder is not the cloned `casa` directory, `cd` into it and retry.
 
 ### Python command mismatch
 
