@@ -35,6 +35,14 @@ class PostMutationReadCheckFailed(RuntimeError):
     """Raised when CASA cannot read the target resource immediately after mutation."""
 
 
+class MutationExecutionFailed(RuntimeError):
+    """Raised after a mutating tool fails, once CASA has captured the post-state."""
+
+
+class SessionIsolated(RuntimeError):
+    """Raised when an isolated sub-agent attempts another tool call."""
+
+
 class PartialExecutionDetected(RuntimeError):
     """Raised when the observed state delta exceeds the declared mutation boundary."""
 
@@ -207,12 +215,15 @@ def _verification_contract_or_fail(
     action: str,
     execution_contract: ToolExecutionContract | None,
 ) -> MutationVerificationContract | None:
+    if _looks_like_mutation(action) and (
+        execution_contract is None or not execution_contract.mutates_data
+    ):
+        raise VerificationContractRequired(
+            "Mutating action requires ToolExecutionContract with a "
+            "MutationVerificationContract"
+        )
+
     if execution_contract is None:
-        if _looks_like_mutation(action):
-            raise VerificationContractRequired(
-                "Mutating action requires ToolExecutionContract with a "
-                "MutationVerificationContract"
-            )
         return None
 
     if execution_contract.mutates_data and execution_contract.verification is None:
@@ -245,6 +256,11 @@ def casa_guard(
 
     verification = _verification_contract_or_fail(action, execution_contract)
     active_session = session or SubAgentSession(session_id=f"{agent}:{action}")
+    if active_session.isolated:
+        raise SessionIsolated(
+            f"Session {active_session.session_id} is isolated: "
+            f"{active_session.isolation_reason or 'review required'}"
+        )
 
     print("\n[CASA] Intercepting tool request")
     decision = evaluate_action(agent, action)
@@ -284,7 +300,12 @@ def casa_guard(
             "CASA could not read the target resource before mutation"
         ) from error
 
-    result = tool_function()
+    tool_error: Exception | None = None
+    result: Any = None
+    try:
+        result = tool_function()
+    except Exception as error:
+        tool_error = error
 
     try:
         post_state = _copy_state(verification.state_reader(verification.target_key))
@@ -328,6 +349,24 @@ def casa_guard(
         )
         _isolate_and_route(active_session, incident, exception_handler)
         raise PartialExecutionDetected(incident)
+
+    if tool_error is not None:
+        incident = VerificationIncident(
+            agent=agent,
+            action=action,
+            session_id=active_session.session_id,
+            target_key=verification.target_key,
+            stage="tool_execution",
+            error_code="MUTATION_TOOL_EXECUTION_FAILED",
+            detail=str(tool_error),
+            pre_state=pre_state,
+            post_state=post_state,
+            actual_delta=actual_delta,
+        )
+        _isolate_and_route(active_session, incident, exception_handler)
+        raise MutationExecutionFailed(
+            "Mutating tool failed after CASA captured the post-mutation state"
+        ) from tool_error
 
     if memory_committer is not None:
         memory_committer(result)
