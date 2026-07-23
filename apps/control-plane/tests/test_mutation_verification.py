@@ -3,9 +3,11 @@ import pytest
 import casa.middleware as middleware
 from casa.middleware import (
     FieldDeltaExpectation,
+    MutationExecutionFailed,
     MutationVerificationContract,
     PartialExecutionDetected,
     PostMutationReadCheckFailed,
+    SessionIsolated,
     SubAgentSession,
     ToolExecutionContract,
     VerificationContractRequired,
@@ -132,3 +134,63 @@ def test_post_mutation_read_failure_isolates_session_and_blocks_memory():
     assert session.isolated is True
     assert session.isolation_reason == "POST_MUTATION_READ_FAILED"
     assert memory == []
+
+
+def test_mislabeled_mutation_cannot_bypass_verification_contract():
+    calls = []
+
+    with pytest.raises(VerificationContractRequired):
+        casa_guard(
+            "agent-1",
+            "update_customer",
+            lambda: calls.append("tool-called"),
+            execution_contract=ToolExecutionContract(mutates_data=False),
+        )
+
+    assert calls == []
+
+
+def test_failed_mutation_is_verified_then_isolated_before_memory_commit():
+    state = {"customer-1": {"status": "pending"}}
+    session = SubAgentSession(session_id="session-4")
+    memory = []
+
+    def state_reader(target_key):
+        return dict(state[target_key])
+
+    def tool_that_fails_after_mutation():
+        state["customer-1"]["status"] = "active"
+        raise RuntimeError("downstream timeout")
+
+    with pytest.raises(MutationExecutionFailed):
+        casa_guard(
+            "agent-1",
+            "update_customer",
+            tool_that_fails_after_mutation,
+            execution_contract=_update_contract(state_reader),
+            session=session,
+            memory_committer=memory.append,
+        )
+
+    assert session.isolated is True
+    assert session.isolation_reason == "MUTATION_TOOL_EXECUTION_FAILED"
+    assert memory == []
+
+
+def test_isolated_session_cannot_execute_follow_up_tools():
+    session = SubAgentSession(
+        session_id="session-5",
+        isolated=True,
+        isolation_reason="PARTIAL_EXECUTION_DETECTED",
+    )
+    calls = []
+
+    with pytest.raises(SessionIsolated):
+        casa_guard(
+            "agent-1",
+            "read_customer",
+            lambda: calls.append("tool-called"),
+            session=session,
+        )
+
+    assert calls == []
