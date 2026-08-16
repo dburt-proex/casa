@@ -72,7 +72,7 @@ Use this order for every task:
 
 All execution paths affecting policy, gating, risk scoring, or audit records must route through `casa.evaluate()`.
 
-Gate outcome is always one of: `AUTO`, `REVIEW`, `HALT`. No additional states.
+Gate outcome is always one of: `ALLOW`, `REVIEW`, `HALT`. No additional states.
 
 Tier 3 actions always produce `HALT`. This is non-negotiable.
 
