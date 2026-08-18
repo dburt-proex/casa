@@ -1,0 +1,9 @@
+{
+  "registry": "dburt-proex/operator-intelligence:ecosystem/registry.json",
+  "registry_version": "1.0.0",
+  "repository": "dburt-proex/casa",
+  "classification": "CORE",
+  "authority_for": ["execution_governance_control_plane"],
+  "may_define_new_primitives": true,
+  "supersedes": ["dburt-proex/backend-c.c.p.", "dburt-proex/casa-governance", "dburt-proex/python-fastapi-backend", "dburt-proex/legacy-archived-casa"]
+}
