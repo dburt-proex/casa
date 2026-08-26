@@ -1,0 +1,96 @@
+version: '0.1'
+status: internal_readiness_baseline
+claim_boundary: no_certification_or_attestation_claim_without_independent_assurance
+states: [NOT_APPLICABLE, MISSING, PARTIAL, IMPLEMENTED, VERIFIED]
+controls:
+  - id: GOV-001
+    title: Governance authority and bounded execution
+    objective: Establish explicit authority, scope, approval gates and prohibited actions.
+    frameworks: [ISO27001_ISMS, ISO42001_AIMS, SOC2_CC, NIST_AI_RMF_GOVERN]
+    owners: [CASA, PromptBP]
+    evidence: [policy_version, gate_decision, approval_or_halt_receipt]
+    status: IMPLEMENTED
+  - id: RSK-001
+    title: Risk identification assessment and treatment
+    objective: Identify, score, prioritize, treat, accept and review material information-security and AI risks.
+    frameworks: [ISO27001_ISMS, ISO42001_AIMS, SOC2_CC, NIST_AI_RMF_MAP, NIST_AI_RMF_MEASURE, NIST_AI_RMF_MANAGE]
+    owners: [CASA, VIL, Operator-Intelligence]
+    evidence: [risk_record, score_basis, treatment_decision, residual_risk]
+    status: PARTIAL
+  - id: IAM-001
+    title: Privileged action authorization
+    objective: Prevent unauthorized privileged or high-impact execution.
+    frameworks: [ISO27001_ISMS, SOC2_CC, ISO42001_AIMS, NIST_AI_RMF_GOVERN]
+    owners: [CASA, Runwall]
+    evidence: [actor_identity, action_signature, authorization_decision, approval_artifact]
+    status: IMPLEMENTED
+  - id: CHG-001
+    title: Governed change management
+    objective: Evaluate material changes before merge/release and preserve review evidence.
+    frameworks: [ISO27001_ISMS, SOC2_CC, ISO42001_AIMS]
+    owners: [DiffWall, GitHub]
+    evidence: [diff_assessment, ci_result, review_record, commit_sha]
+    status: IMPLEMENTED
+  - id: LOG-001
+    title: Decision and execution audit trail
+    objective: Preserve attributable, replayable records of governed decisions and executions.
+    frameworks: [ISO27001_ISMS, SOC2_CC, ISO42001_AIMS, NIST_AI_RMF_GOVERN]
+    owners: [CASA, Runwall, Mirdexx, Operator-Intelligence]
+    evidence: [ledger_entry, timestamp, policy_version, integrity_check]
+    status: IMPLEMENTED
+  - id: EVD-001
+    title: Evidence provenance and integrity
+    objective: Bind findings and control claims to attributable retained evidence.
+    frameworks: [ISO27001_ISMS, SOC2_CC, ISO42001_AIMS, NIST_AI_RMF_MEASURE]
+    owners: [Mirdexx, Operator-Intelligence]
+    evidence: [source_record, artifact_hash, provenance_record, verification_result]
+    status: IMPLEMENTED
+  - id: SEC-001
+    title: Threat and security boundary management
+    objective: Identify trust boundaries, threats, mitigations, residual risk and security failures.
+    frameworks: [ISO27001_ISMS, SOC2_CC, ISO42001_AIMS, NIST_AI_RMF_MAP]
+    owners: [CASA, Runwall, DiffWall]
+    evidence: [threat_model, security_test, incident_or_finding]
+    status: IMPLEMENTED
+  - id: INC-001
+    title: Incident response and corrective action
+    objective: Detect, classify, contain, investigate, correct and learn from material incidents.
+    frameworks: [ISO27001_ISMS, SOC2_CC, ISO42001_AIMS, NIST_AI_RMF_MANAGE]
+    owners: [CASA, Runwall]
+    evidence: [incident_record, containment_action, root_cause, corrective_action, retest]
+    status: PARTIAL
+  - id: AI-001
+    title: AI lifecycle governance and TEVV
+    objective: Inventory AI systems and apply contextual assessment, testing, monitoring and go/no-go decisions through lifecycle.
+    frameworks: [ISO42001_AIMS, NIST_AI_RMF_GOVERN, NIST_AI_RMF_MAP, NIST_AI_RMF_MEASURE, NIST_AI_RMF_MANAGE]
+    owners: [CASA, Operator-Intelligence, VIL]
+    evidence: [ai_system_record, intended_use, evaluation_result, risk_decision, monitoring_record]
+    status: PARTIAL
+  - id: DAT-001
+    title: Data classification retention and protection
+    objective: Define data classes, permitted handling, retention, deletion and protection requirements.
+    frameworks: [ISO27001_ISMS, SOC2_CONFIDENTIALITY, SOC2_PRIVACY, ISO42001_AIMS]
+    owners: [Governance]
+    evidence: [data_inventory, classification, retention_rule, deletion_or_exception_record]
+    status: MISSING
+  - id: SUP-001
+    title: Supplier and model-provider risk management
+    objective: Inventory and assess material third parties, model providers and service dependencies.
+    frameworks: [ISO27001_ISMS, SOC2_CC, ISO42001_AIMS, NIST_AI_RMF_GOVERN]
+    owners: [Governance]
+    evidence: [supplier_inventory, assessment, approved_use, review_record]
+    status: MISSING
+  - id: BCM-001
+    title: Continuity backup and recovery
+    objective: Define and test continuity, backup, restoration and recovery requirements for critical records and services.
+    frameworks: [ISO27001_ISMS, SOC2_AVAILABILITY]
+    owners: [Infrastructure, Governance]
+    evidence: [backup_record, restore_test, recovery_result]
+    status: MISSING
+  - id: REV-001
+    title: Internal audit and management review
+    objective: Periodically evaluate control effectiveness, findings, exceptions, risk and corrective action.
+    frameworks: [ISO27001_ISMS, ISO42001_AIMS, SOC2_CC, NIST_AI_RMF_GOVERN]
+    owners: [Operator-Intelligence, Operator]
+    evidence: [audit_report, finding_register, management_review, corrective_action_status]
+    status: PARTIAL
