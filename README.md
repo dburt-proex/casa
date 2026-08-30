@@ -1,5 +1,7 @@
 # CASA
 
+**Portfolio evidence:** [Systems & proof](https://drew-burt-portfolio.daxxer-os.chatgpt.site/systems) · [Governance Lab](https://drew-burt-portfolio.daxxer-os.chatgpt.site/lab)
+
 ## Control Awareness System Architecture
 
 Deterministic execution governance for AI systems.
