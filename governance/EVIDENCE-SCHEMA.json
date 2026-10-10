@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:casa:compliance:evidence:v0.1",
+  "title": "Compliance Evidence Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["evidence_id", "control_id", "source", "system", "generated_at", "test_or_review", "result"],
+  "properties": {
+    "evidence_id": {"type": "string", "minLength": 1},
+    "control_id": {"type": "string", "minLength": 1},
+    "source": {"type": "string", "minLength": 1},
+    "system": {"type": "string", "minLength": 1},
+    "artifact_ref": {"type": ["string", "null"]},
+    "artifact_hash": {"type": ["string", "null"]},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "test_or_review": {"type": "string", "minLength": 1},
+    "result": {"enum": ["PASS", "FAIL", "REVIEW", "NOT_APPLICABLE"]},
+    "actor": {"type": ["string", "null"]},
+    "policy_version": {"type": ["string", "null"]},
+    "retention_ref": {"type": ["string", "null"]},
+    "notes": {"type": ["string", "null"]}
+  }
+}
