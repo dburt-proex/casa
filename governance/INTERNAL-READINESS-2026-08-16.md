@@ -2,7 +2,7 @@
 
 Gate: REVIEW
 Assurance status: NOT CERTIFIED / NOT ATTESTED
-Assessment basis: repository-visible artifacts and controls inspected across CASA, Runwall, DiffWall, Operator Intelligence, VIL, Mirdexx and PromptBP. No production environment, organizational HR process, vendor contracts, backup system, external auditor evidence, or full operating-period evidence was available in this assessment.
+Assessment basis: repository-visible artifacts and controls inspected across SOVRA, Runwall, DiffWall, Operator Intelligence, VIL, Mirdexx and PromptBP. No production environment, organizational HR process, vendor contracts, backup system, external auditor evidence, or full operating-period evidence was available in this assessment.
 
 ## Executive result
 
@@ -12,7 +12,7 @@ The environment is not yet audit-ready for an ISO certification or SOC 2 examina
 
 ## Repository observations
 
-### CASA
+### SOVRA
 Observed: SECURITY.md; CI and DiffWall workflows; governed agent registry; explicit ALLOW/REVIEW/HALT authority boundaries; append-only ledger invariant; policy-version requirement; threat model with trust boundaries, execution-bypass, drift, evidence suppression, determinism and ledger-corruption threats; incident classes and SAFE_MODE escalation.
 Assessment: strong implementation evidence for GOV-001, IAM-001, LOG-001 and SEC-001. INC-001 remains PARTIAL because a threat-model incident taxonomy is not equivalent to a complete organizational incident-response program.
 

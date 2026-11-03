@@ -1,6 +1,6 @@
-# CASA-Flagship
+# SOVRA-Flagship
 
-CASA-Flagship is the operator-facing console for CASA.
+SOVRA-Flagship is the operator-facing console for SOVRA.
 
 It provides a web UI and server orchestration layer for:
 
@@ -13,7 +13,7 @@ It provides a web UI and server orchestration layer for:
 - review queue workflows
 - operator tooling and future admin workflows
 
-This app is the frontend and server integration layer in the canonical `dburt-proex/casa` monorepo. It connects to the CASA governance backend in `apps/control-plane`:
+This app is the frontend and server integration layer in the canonical `dburt-proex/casa` monorepo. It connects to the SOVRA governance backend in `apps/control-plane`:
 
 ```txt
 Backend: apps/control-plane
@@ -57,7 +57,7 @@ Responsible for:
 
 ## Required Backend Contract
 
-CASA-Flagship expects the CASA governance backend to expose:
+SOVRA-Flagship expects the SOVRA governance backend to expose:
 
 ```txt
 GET  /health
@@ -101,7 +101,7 @@ REDIS_URL=
 
 Notes:
 
-- `CASA_GOVERNANCE_API_URL` is the canonical production backend URL for the CASA governance API.
+- `CASA_GOVERNANCE_API_URL` is the canonical production backend URL for the SOVRA governance API.
 - `CASA_API_URL` and `BACKEND_API_URL` are accepted only outside production for local compatibility.
 - `GEMINI_API_KEY` is the canonical production variable for Gemini explanations.
 - Clerk keys enable production authentication.
@@ -129,7 +129,7 @@ ENABLE_DEV_LOGIN=true
 JWT_SECRET=
 ```
 
-3. Run the CASA governance backend separately:
+3. Run the SOVRA governance backend separately:
 
 ```bash
 cd ../control-plane
@@ -137,7 +137,7 @@ pip install -r requirements.txt
 uvicorn governance_api:app --host 127.0.0.1 --port 5000
 ```
 
-4. Start CASA-Flagship:
+4. Start SOVRA-Flagship:
 
 ```bash
 npm run dev
@@ -156,7 +156,7 @@ curl http://127.0.0.1:5000/dashboard
 
 ## Deployment Notes
 
-Deploy CASA-Flagship as the operator console.
+Deploy SOVRA-Flagship as the operator console.
 
 Set these runtime variables:
 
@@ -182,7 +182,7 @@ The process-local Express rate limiter is not global across multiple scaled inst
 
 ### Workflow Intake
 
-Submits a proposed AI workflow action to `/evaluate` and renders the CASA gate result.
+Submits a proposed AI workflow action to `/evaluate` and renders the SOVRA gate result.
 
 Expected result fields include:
 
@@ -298,4 +298,4 @@ Governance backend: dburt-proex/casa-control-plane
 
 ## Status
 
-Current status: active integration and stabilization between CASA-Flagship and the canonical CASA governance backend.
+Current status: active integration and stabilization between SOVRA-Flagship and the canonical SOVRA governance backend.

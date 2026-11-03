@@ -260,7 +260,7 @@ If it does not materially increase leverage, clarity, system integrity, or reven
 PROJECT CONTEXT
 
 Primary focus:
-CASA, deterministic AI governance control plane
+SOVRA, deterministic AI governance control plane
 PromptBP, instruction control layer
 Marketing, packaging, sales enablement, and technical authority assets
 

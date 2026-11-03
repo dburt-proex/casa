@@ -1,9 +1,9 @@
-# CASA-Flagship Repository Instructions
+# SOVRA-Flagship Repository Instructions
 
 This repository represents a governance-grade AI control plane and operator-facing system.
 
 ## Core mission
-- Preserve the integrity of the CASA governance model.
+- Preserve the integrity of the SOVRA governance model.
 - Keep control logic explicit, reviewable, and testable.
 - Prefer narrow, reversible edits over broad architectural drift.
 

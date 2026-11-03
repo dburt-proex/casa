@@ -1,8 +1,8 @@
-# CASA REGULATORY DEMO SCENARIO
+# SOVRA REGULATORY DEMO SCENARIO
 
 ## Executive Summary
 
-This scenario demonstrates CASA as an enterprise governance platform for regulated AI systems. It shows:
+This scenario demonstrates SOVRA as an enterprise governance platform for regulated AI systems. It shows:
 
 1. **Real-time governance monitoring** - Live decision distribution and risk metrics
 2. **Decision audit trails** - Complete reproducible history with replay capability
@@ -274,7 +274,7 @@ Warnings:
 └─────────────────────────────────────────────────────────┘
                           ↓
 ┌─────────────────────────────────────────────────────────┐
-│  CASA Control Plane                                     │
+│  SOVRA Control Plane                                     │
 │  - Risk Classification (signals → risk score)           │
 │  - Gate Engine (policy → decision)                      │
 │  - Router (ALLOW/REVIEW/HALT → execution)              │
@@ -331,7 +331,7 @@ python demo_setup.py recovery     # System stabilization
 
 ## Key Differentiation vs. Existing Solutions
 
-| Aspect | Existing Tools | CASA |
+| Aspect | Existing Tools | SOVRA |
 |--------|---|---|
 | **Governance Type** | Prompt/Output Filtering | Execution Governance |
 | **Auditability** | Lossy Logs | Cryptographic Ledger |
@@ -344,7 +344,7 @@ python demo_setup.py recovery     # System stabilization
 
 ## Getting to Production
 
-**What CASA Provides**:
+**What SOVRA Provides**:
 - ✅ Governance control plane
 - ✅ Immutable audit ledger  
 - ✅ Drift detection & anomaly flagging
@@ -355,7 +355,7 @@ python demo_setup.py recovery     # System stabilization
 
 **What You Provide**:
 - Authentication/authorization
-- Agent integration (route decisions via CASA)
+- Agent integration (route decisions via SOVRA)
 - Signal extraction (domain-specific metrics)
 - Policy configuration (governance rules)
 - Incident response workflows
@@ -375,4 +375,4 @@ python demo_setup.py recovery     # System stabilization
 
 ---
 
-**CASA: Governance Infrastructure for Autonomous AI Systems**
+**SOVRA: Governance Infrastructure for Autonomous AI Systems**

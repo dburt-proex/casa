@@ -1,22 +1,22 @@
-# CASA
+# SOVRA
 
 **Portfolio evidence:** [Systems & proof](https://drew-burt-portfolio.daxxer-os.chatgpt.site/systems) · [Governance Lab](https://drew-burt-portfolio.daxxer-os.chatgpt.site/lab)
 
-## Control Awareness System Architecture
+## Sovereign Operations & Verified Runtime Architecture
 
 Deterministic execution governance for AI systems.
 
-CASA is a governance control plane that sits between AI reasoning and real-world execution. Instead of letting agents, copilots, or workflows act directly, CASA evaluates each proposed action and routes it into a closed decision set:
+SOVRA is a governance control plane that sits between AI reasoning and real-world execution. Instead of letting agents, copilots, or workflows act directly, SOVRA evaluates each proposed action and routes it into a closed decision set:
 
 - **ALLOW** — safe to execute automatically
 - **REVIEW** — requires human approval
 - **HALT** — blocked by policy or safety boundary
 
-CASA is built for teams that need bounded autonomy, replayable decisions, and auditable execution control.
+SOVRA is built for teams that need bounded autonomy, replayable decisions, and auditable execution control.
 
 ---
 
-## Why CASA Exists
+## Why SOVRA Exists
 
 Most AI systems still follow the unsafe default pattern:
 
@@ -30,7 +30,7 @@ Tool Call / External Action
 
 That works for demos. It breaks down in production.
 
-CASA inserts an explicit control boundary before execution so that:
+SOVRA inserts an explicit control boundary before execution so that:
 
 - actions are evaluated before they run
 - high-risk operations cannot bypass governance
@@ -43,7 +43,7 @@ CASA inserts an explicit control boundary before execution so that:
 
 Autonomy becomes deployable when execution authority is structurally bounded.
 
-CASA governs execution, not model cognition. It does **not** claim perfect reasoning, legal correctness, or universal safety. It enforces explicit boundaries around what an AI system is allowed to do.
+SOVRA governs execution, not model cognition. It does **not** claim perfect reasoning, legal correctness, or universal safety. It enforces explicit boundaries around what an AI system is allowed to do.
 
 ---
 
@@ -56,7 +56,7 @@ Policy Definition
   ↓
 AI Reasoning System
   ↓
-CASA Control Plane
+SOVRA Control Plane
   ↓
 Execution Router
   ↓
@@ -65,13 +65,13 @@ External Tools / APIs / State Changes
 Immutable Audit Ledger
 ```
 
-Reasoning systems never execute directly. All execution passes through CASA.
+Reasoning systems never execute directly. All execution passes through SOVRA.
 
 ---
 
-## What CASA Guarantees
+## What SOVRA Guarantees
 
-CASA is designed to guarantee:
+SOVRA is designed to guarantee:
 
 - explicit execution boundaries
 - deterministic routing
@@ -80,7 +80,7 @@ CASA is designed to guarantee:
 - machine-detectable violations
 - Tier 3 / hard-violation actions always halt
 
-CASA does **not** guarantee:
+SOVRA does **not** guarantee:
 
 - correctness of the underlying model
 - perfect safety in all contexts
@@ -91,7 +91,7 @@ CASA does **not** guarantee:
 
 ## Decision Model
 
-CASA routes proposed actions into a closed state set:
+SOVRA routes proposed actions into a closed state set:
 
 - **ALLOW** — low-risk action may execute
 - **REVIEW** — human approval required
@@ -217,7 +217,7 @@ Transitions between NORMAL, DEGRADED, and SAFE_MODE. SAFE_MODE prohibits irrever
 
 ## Threat Model
 
-CASA is engineered around structural governance failures, not abstract AI ethics.
+SOVRA is engineered around structural governance failures, not abstract AI ethics.
 
 Primary threat classes covered in the current specification include:
 

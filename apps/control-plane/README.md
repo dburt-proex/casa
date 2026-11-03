@@ -1,5 +1,5 @@
-# CASA  
-## Control Awareness System Architecture  
+# SOVRA  
+## Sovereign Operations & Verified Runtime Architecture  
 Deterministic Governance Control Plane for Autonomous Systems
 
 ---
@@ -25,7 +25,7 @@ pip install -r requirements.txt
 # 2. Generate demo data
 python demo_setup.py stable
 
-# 3. Start the CASA API
+# 3. Start the SOVRA API
 uvicorn governance_api:app --host 127.0.0.1 --port 5000
 
 # 4. In a second terminal, start the Streamlit dashboard
@@ -48,7 +48,7 @@ streamlit run streamlit_app.py
 ### Option B — Heroku
 
 ```bash
-heroku create your-casa-api
+heroku create your-sovra-api
 git push heroku main
 heroku config:set CORS_ORIGINS=https://your-dashboard.streamlit.app
 ```
@@ -71,7 +71,7 @@ heroku config:set CORS_ORIGINS=https://your-dashboard.streamlit.app
 
 | Variable | Service | Description | Default |
 |---|---|---|---|
-| `CASA_API_URL` | Dashboard | URL of the deployed CASA API | `http://127.0.0.1:5000` |
+| `CASA_API_URL` | Dashboard | URL of the deployed SOVRA API | `http://127.0.0.1:5000` |
 | `CORS_ORIGINS` | API | Comma-separated allowed origins | `*` |
 | `LOGIN_USERNAME` | Dashboard | Dashboard login username | `admin` |
 | `LOGIN_PASSWORD_HASH` | Dashboard | SHA-256 hex digest of the password | hash of `casa-demo` |
@@ -98,11 +98,11 @@ The dashboard includes a **Plans & Pricing** section powered by Stripe.
 
 
 
-CASA is a deterministic control plane that governs autonomous and semi-autonomous AI systems.
+SOVRA is a deterministic control plane that governs autonomous and semi-autonomous AI systems.
 
 It installs enforceable execution boundaries between reasoning and real-world action.
 
-CASA ensures that:
+SOVRA ensures that:
 
 - All actions are explicitly authorized
 - High-risk operations require escalation
@@ -110,7 +110,7 @@ CASA ensures that:
 - Every decision is replayable
 - Governance is version-controlled and machine-detectable
 
-CASA operates **above orchestration** and **below human authority**.
+SOVRA operates **above orchestration** and **below human authority**.
 
 It is infrastructure — not a wrapper, not a model, and not a compliance checklist.
 
@@ -131,7 +131,7 @@ Without architectural control, governance degrades under optimization pressure.
 
 ## Closed Gate States
 
-CASA enforces a closed execution state set:
+SOVRA enforces a closed execution state set:
 
 - `AUTO` — Low risk, allowed to execute  
 - `REVIEW` — Human approval required  
@@ -148,7 +148,7 @@ Policy Layer
 │
 AI Reasoning System
 │
-CASA Control Plane
+SOVRA Control Plane
 │
 Execution Router
 │
@@ -157,7 +157,7 @@ Tools / APIs / State Changes
 Immutable Audit Ledger
 
 Agents never execute tools directly.  
-All execution passes through CASA.
+All execution passes through SOVRA.
 
 ---
 
@@ -230,11 +230,11 @@ SAFE_MODE prohibits irreversible actions.
 
 Invariant Drift
 
-CASA formalizes Invariant Drift as a system-level failure mode.
+SOVRA formalizes Invariant Drift as a system-level failure mode.
 
 Invariant drift occurs when the effective invariant set changes over time without a versioned policy update.
 
-CASA detects drift using:
+SOVRA detects drift using:
 
 Invariant Retention Ratio (IRR)
 
@@ -262,9 +262,9 @@ Tier 3 always results in HALT.
 
 Boundaries are machine-enforceable.
 
-What CASA Guarantees
+What SOVRA Guarantees
 
-CASA guarantees:
+SOVRA guarantees:
 
 Explicit execution boundaries
 
@@ -276,7 +276,7 @@ Version-bound governance
 
 Machine-detectable violations
 
-CASA does not guarantee:
+SOVRA does not guarantee:
 
 Outcome correctness
 
@@ -288,7 +288,7 @@ It guarantees controlled autonomy — not correctness.
 Minimal deployment structure
 Agent
   ↓
-CASA Gateway
+SOVRA Gateway
   ↓
 Signal Extraction
   ↓

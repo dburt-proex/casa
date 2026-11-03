@@ -1,12 +1,12 @@
-# CASA Swarm Demo — Block 1
+# SOVRA Swarm Demo — Block 1
 
 ## Block Name
 
-CASA Swarm Runner Core Loop
+SOVRA Swarm Runner Core Loop
 
 ## Objective
 
-Create a minimal, reviewable demonstration of supervised agent delegation controlled by CASA-style governance gates.
+Create a minimal, reviewable demonstration of supervised agent delegation controlled by SOVRA-style governance gates.
 
 The demo proves this loop:
 
@@ -24,7 +24,7 @@ User Request
 
 - Supervised agent swarm model
 - Deterministic agent role definitions
-- CASA gate classification using ALLOW / REVIEW / HALT
+- SOVRA gate classification using ALLOW / REVIEW / HALT
 - In-memory audit ledger
 - Markdown-friendly execution record
 - Airtable/Notion-friendly field schema
@@ -93,7 +93,7 @@ docs/casa-swarm-airtable-schema.md
 
 No existing application code is modified in Block 1.
 
-## CASA Gate
+## SOVRA Gate
 
 Initial block classification: `ALLOW`
 
@@ -136,15 +136,15 @@ The script prints a JSON decision packet containing:
 
 ## Notion Copy
 
-### CASA Swarm Demo — Block 1
+### SOVRA Swarm Demo — Block 1
 
 **Status:** Draft / Demo Ready  
 **Gate:** ALLOW  
 **Block Type:** Vertical slice / governance demo  
-**Owner:** CASA Operator  
-**System:** CASA-Flagship  
+**Owner:** SOVRA Operator  
+**System:** SOVRA-Flagship  
 
-**Objective:** Demonstrate supervised agent delegation controlled by CASA gating and recorded in an audit ledger.
+**Objective:** Demonstrate supervised agent delegation controlled by SOVRA gating and recorded in an audit ledger.
 
 **Execution Flow:** User Request → Supervisor → Builder → QA → Governance Gate → Ledger → Decision Packet
 

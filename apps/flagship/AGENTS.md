@@ -1,18 +1,18 @@
 # AGENTS.md — Codex Operating Contract
 
-This file is the mandatory operating contract for Codex and supervised AI agents working in the CASA Flagship repository.
+This file is the mandatory operating contract for Codex and supervised AI agents working in the SOVRA Flagship repository.
 
 ---
 
 ## Project Context
 
-This repository is part of the CASA / PromptBP build system.
+This repository is part of the SOVRA / PromptBP build system.
 
-CASA is a governed control-plane architecture for AI-assisted execution. The project prioritizes deterministic behavior, auditable decisions, bounded implementation, and demo-ready proof over speculative feature expansion.
+SOVRA is a governed control-plane architecture for AI-assisted execution. The project prioritizes deterministic behavior, auditable decisions, bounded implementation, and demo-ready proof over speculative feature expansion.
 
 PromptBP is the instruction-control framework used to structure build prompts, reduce drift, and improve execution reliability.
 
-CASA Flagship is the operator-facing application layer. Changes here must preserve frontend/backend contract integrity with the CASA control plane.
+SOVRA Flagship is the operator-facing application layer. Changes here must preserve frontend/backend contract integrity with the SOVRA control plane.
 
 ---
 
@@ -59,7 +59,7 @@ For every task:
 
 ## Gate Policy
 
-Use CASA-style gate classification for all work.
+Use SOVRA-style gate classification for all work.
 
 ALLOW:
 - Documentation updates.
@@ -114,7 +114,7 @@ Every PR or proposed change must include:
 - Files changed
 - Tests run
 - Test results
-- CASA gate classification
+- SOVRA gate classification
 - Risk notes
 - Rollback plan
 - Recommended next block
@@ -137,7 +137,7 @@ Avoid adding infrastructure before validating demo usefulness, buyer clarity, or
 
 ---
 
-## CASA Flagship Specific Constraints
+## SOVRA Flagship Specific Constraints
 
 Codex must preserve:
 

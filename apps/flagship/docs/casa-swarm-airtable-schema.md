@@ -1,4 +1,4 @@
-# CASA Swarm — Airtable / Notion Schema
+# SOVRA Swarm — Airtable / Notion Schema
 
 ## Table: Swarm Executions
 

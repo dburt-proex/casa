@@ -21,9 +21,9 @@ Marketing content in this repository includes:
 
 ## Accuracy Rules
 
-- Every claim about CASA capabilities must be verifiable against the actual implementation
+- Every claim about SOVRA capabilities must be verifiable against the actual implementation
 - Do not assert guarantees that exceed what the system architecturally provides
-- CASA guarantees **control over execution**, not correctness of agent reasoning or ethical completeness
+- SOVRA guarantees **control over execution**, not correctness of agent reasoning or ethical completeness
 - Do not present planned features as shipped
 - Do not use superlatives ("best", "only", "first") without verified evidence
 
@@ -41,12 +41,12 @@ Marketing content in this repository includes:
 
 ## Positioning Constraints
 
-CASA may be positioned accurately as:
+SOVRA may be positioned accurately as:
 - A deterministic governance control plane for autonomous AI systems
 - A system that enforces execution boundaries between AI reasoning and real-world actions
 - Infrastructure for bounded autonomy with measurable risk and replayable audit trails
 
-Do not position CASA as:
+Do not position SOVRA as:
 - A model alignment solution
 - A legal compliance guarantee
 - An ethical AI certification
