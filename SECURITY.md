@@ -1,6 +1,6 @@
  # Security Policy volume I.
 
-## CASA deterministic gate/governance control layer
+## SOVRA deterministic gate/governance control layer
 GitHub Repository Security Policy:
 
 This policy establishes the baseline security requirements for all repositories under our GitHub organization. Non-compliance risks immediate revocation of access.

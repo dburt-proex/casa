@@ -1,6 +1,6 @@
 # AGENTS.md — Agent Registry and Governance Index
 
-This file is the canonical registry for all Codex, Copilot, and supervised agent profiles and instruction sets in the CASA control plane repository.
+This file is the canonical registry for all Codex, Copilot, and supervised agent profiles and instruction sets in the SOVRA control plane repository.
 
 ---
 
@@ -8,9 +8,9 @@ This file is the canonical registry for all Codex, Copilot, and supervised agent
 
 ### Project Context
 
-This repository is part of the CASA / PromptBP build system.
+This repository is part of the SOVRA / PromptBP build system.
 
-CASA is a governed control-plane architecture for AI-assisted execution. The project prioritizes deterministic behavior, auditable decisions, bounded implementation, and demo-ready proof over speculative feature expansion.
+SOVRA is a governed control-plane architecture for AI-assisted execution. The project prioritizes deterministic behavior, auditable decisions, bounded implementation, and demo-ready proof over speculative feature expansion.
 
 PromptBP is the instruction-control framework used to structure build prompts, reduce drift, and improve execution reliability.
 
@@ -53,7 +53,7 @@ For every task:
 
 ### Gate Policy
 
-Use CASA-style gate classification for all work.
+Use SOVRA-style gate classification for all work.
 
 ALLOW:
 - Documentation updates.
@@ -104,7 +104,7 @@ Every PR or proposed change must include:
 - Files changed
 - Tests run
 - Test results
-- CASA gate classification
+- SOVRA gate classification
 - Risk notes
 - Rollback plan
 - Recommended next block
@@ -132,7 +132,7 @@ When uncertain, stop and classify the issue as REVIEW instead of guessing.
 
 | Agent | File | Scope |
 |---|---|---|
-| CASA Operator | `agents/casa-operator.agent.md` | Repo-wide governed execution agent |
+| SOVRA Operator | `agents/casa-operator.agent.md` | Repo-wide governed execution agent |
 
 ---
 
@@ -191,7 +191,7 @@ Pause and emit a REVIEW PACK before executing when work touches:
 
 ---
 
-## CASA Governance Constraints
+## SOVRA Governance Constraints
 
 All agents operating in this repository must observe:
 

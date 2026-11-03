@@ -1,6 +1,6 @@
-# CASA Demo Media Capture Checklist
+# SOVRA Demo Media Capture Checklist
 
-This file exists to close the last obvious proof gap in the public CASA artifact: committed runtime media.
+This file exists to close the last obvious proof gap in the public SOVRA artifact: committed runtime media.
 
 ## Required media set
 
@@ -51,7 +51,7 @@ Suggested file:
 
 ### 3. Policy Lab screenshot
 
-Goal: show that CASA is not only a gate, but an operational governance surface.
+Goal: show that SOVRA is not only a gate, but an operational governance surface.
 
 Capture:
 
@@ -119,7 +119,7 @@ CASA_GOVERNANCE_API_URL=http://127.0.0.1:5000
 
 The public repo should let a new visitor see, within one minute:
 
-- what CASA is
+- what SOVRA is
 - what ALLOW / REVIEW / HALT means
 - that a real interface exists
 - that governance and audit are implemented, not merely described

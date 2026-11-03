@@ -1,8 +1,8 @@
-# CASA v1.0: Complete Enterprise Governance Platform
+# SOVRA v1.0: Complete Enterprise Governance Platform
 
 ## ✅ COMPLETION STATUS
 
-**CASA is production-ready and fully tested.**
+**SOVRA is production-ready and fully tested.**
 
 - ✅ **Code**: 99 passing tests
 - ✅ **Infrastructure**: All governance components implemented
@@ -14,9 +14,9 @@
 
 ---
 
-## What CASA Does
+## What SOVRA Does
 
-CASA is execution governance for autonomous AI systems. It answers:
+SOVRA is execution governance for autonomous AI systems. It answers:
 
 **"How do we run autonomous AI safely, provably, and at scale?"**
 
@@ -27,7 +27,7 @@ CASA is execution governance for autonomous AI systems. It answers:
 └───────────────────────────────────────┬──────────────────┘
                                         ↓
 ┌──────────────────────────────────────────────────────────┐
-│ CASA Control Plane                                        │
+│ SOVRA Control Plane                                        │
 │ Deterministic, auditable, policy-based decisions          │
 │ Input: agent_action + signals                            │
 │ Output: ALLOW | REVIEW | HALT                            │
@@ -288,7 +288,7 @@ Coverage areas:
 
 ## Enterprise Deployment Checklist
 
-- [ ] Install CASA package (git clone or pip install)
+- [ ] Install SOVRA package (git clone or pip install)
 - [ ] Configure policy in `config.py` (thresholds, rules)
 - [ ] Integrate `/evaluate` endpoint into agent platform
 - [ ] Set up signal extraction (domain-specific context)
@@ -384,7 +384,7 @@ Traditional governance tools:
 - Risky (can't test policy changes safely)
 - Opaque (decisions not explainable)
 
-**CASA**:
+**SOVRA**:
 - ✅ Proactive (boundary stress warns before violations)
 - ✅ Immutable (cryptographic audit trail)
 - ✅ Safe (100% historical replay for policy testing)
@@ -402,6 +402,6 @@ For production deployments or questions:
 
 ---
 
-**CASA: Governance Infrastructure for Autonomous AI**
+**SOVRA: Governance Infrastructure for Autonomous AI**
 
 *Version 1.0 - Production Ready*

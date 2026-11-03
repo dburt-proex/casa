@@ -1,4 +1,4 @@
-# CASA Copilot Instructions
+# SOVRA Copilot Instructions
 
 These instructions apply to all Copilot interactions across this repository.
 
@@ -6,9 +6,9 @@ These instructions apply to all Copilot interactions across this repository.
 
 ## Repository Identity
 
-This repository contains **CASA** — a deterministic governance control plane for autonomous AI systems.
+This repository contains **SOVRA** — a deterministic governance control plane for autonomous AI systems.
 
-CASA enforces execution boundaries between AI reasoning and real-world actions using deterministic gating (AUTO / REVIEW / HALT), immutable audit ledgers, and policy-versioned signal evaluation.
+SOVRA enforces execution boundaries between AI reasoning and real-world actions using deterministic gating (AUTO / REVIEW / HALT), immutable audit ledgers, and policy-versioned signal evaluation.
 
 ---
 
@@ -116,6 +116,6 @@ Pause and emit a REVIEW PACK instead of executing when work touches:
 
 | Agent | File |
 |---|---|
-| CASA Operator | `agents/casa-operator.agent.md` |
+| SOVRA Operator | `agents/casa-operator.agent.md` |
 
 See `AGENTS.md` for full registry.

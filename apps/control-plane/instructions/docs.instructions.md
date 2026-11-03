@@ -54,7 +54,7 @@ All documentation must serve a clear purpose. No decorative content.
 
 ## Scope Rules
 
-- Do not add content that is not directly relevant to CASA or its immediate operational context
+- Do not add content that is not directly relevant to SOVRA or its immediate operational context
 - Do not document adjacent systems, future roadmaps, or theoretical expansions unless explicitly scoped
 - Keep each document focused on its single stated purpose
 

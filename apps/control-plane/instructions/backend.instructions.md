@@ -39,9 +39,9 @@ These instructions apply to all Python source files, API modules, and backend co
 
 ---
 
-## CASA Governance Integration
+## SOVRA Governance Integration
 
-All execution paths that affect policy, gates, risk scoring, or audit records must route through the CASA control plane:
+All execution paths that affect policy, gates, risk scoring, or audit records must route through the SOVRA control plane:
 
 ```python
 result = casa.evaluate(action)

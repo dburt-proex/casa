@@ -2,7 +2,7 @@
 
 Status: INTERNAL READINESS BASELINE — NOT CERTIFICATION
 Owner: Operator / Governance
-Scope: CASA, Runwall, DiffWall, Operator Intelligence, VIL, Mirdexx, PromptBP and shared decision/evidence interfaces.
+Scope: SOVRA, Runwall, DiffWall, Operator Intelligence, VIL, Mirdexx, PromptBP and shared decision/evidence interfaces.
 
 ## Claim boundary
 
@@ -23,7 +23,7 @@ Supporting: NIST AI RMF 1.0. Additional mappings require explicit versioning and
 
 ## System roles
 
-- CASA: governance authority, policy/gate decisions, audit decisions.
+- SOVRA: governance authority, policy/gate decisions, audit decisions.
 - Runwall: runtime authorization and execution boundary.
 - DiffWall: change-time enforcement and CI evidence.
 - Operator Intelligence: assessment, evidence graph and control-effectiveness evaluation.

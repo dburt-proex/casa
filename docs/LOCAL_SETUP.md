@@ -1,6 +1,6 @@
 # Local Setup
 
-This guide is the fastest reliable way to run CASA on a local machine.
+This guide is the fastest reliable way to run SOVRA on a local machine.
 
 ## Before you start
 
@@ -17,7 +17,7 @@ If you are not sure where the repo is, find it first and then `cd` into that fol
 
 ## What runs locally
 
-CASA has two primary local components:
+SOVRA has two primary local components:
 
 - `apps/control-plane` — FastAPI governance API
 - `apps/flagship` — operator console / flagship UI

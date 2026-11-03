@@ -1,5 +1,5 @@
-# CASA Architecture Specification
-Control Awareness System Architecture
+# SOVRA Architecture Specification
+Sovereign Operations & Verified Runtime Architecture
 Deterministic Governance Control Plane for Autonomous Systems
 
 Version: 0.1.0
@@ -9,16 +9,16 @@ Status: Draft – Normative Specification
 
 # 1. Scope
 
-This document defines the formal architecture of CASA.
+This document defines the formal architecture of SOVRA.
 
-CASA is a deterministic control plane that governs execution of autonomous systems.
+SOVRA is a deterministic control plane that governs execution of autonomous systems.
 
 It operates between:
 
 - AI reasoning systems (LLMs, agents, planners)
 - Real-world execution interfaces (tools, APIs, state mutations)
 
-CASA enforces bounded autonomy through measurable signals and deterministic routing.
+SOVRA enforces bounded autonomy through measurable signals and deterministic routing.
 
 ---
 
@@ -29,7 +29,7 @@ Policy Definition
 │
 AI Reasoning System
 │
-CASA Control Plane
+SOVRA Control Plane
 │
 Execution Router
 │
@@ -38,7 +38,7 @@ External Tools / State / APIs
 Immutable Audit Ledger
 
 Reasoning systems never execute directly.
-All execution must pass through CASA.
+All execution must pass through SOVRA.
 
 ---
 
@@ -239,7 +239,7 @@ Drift logic integrates into Signal Layer and influences routing.
 
 5. Determinism Requirements
 
-CASA must satisfy:
+SOVRA must satisfy:
 
 Same policy_version + same inputs → same gate outcome
 
@@ -255,7 +255,7 @@ Non-determinism is a critical failure.
 
 6. Non-Goals
 
-CASA does not guarantee:
+SOVRA does not guarantee:
 
 Correctness of agent reasoning
 
@@ -265,7 +265,7 @@ Legal compliance by default
 
 Model alignment
 
-CASA guarantees control over execution, not outcome.
+SOVRA guarantees control over execution, not outcome.
 
 7. Minimal Integration Pattern
 result = casa.evaluate(action)
@@ -277,7 +277,7 @@ elif result.gate == "REVIEW":
 else:
     block(action)
 
-No direct tool calls are permitted outside CASA.
+No direct tool calls are permitted outside SOVRA.
 
 8. Maturity Progression
 
@@ -307,7 +307,7 @@ Any of the above invalidates governance guarantees.
 
 10. Conclusion
 
-CASA defines a deterministic execution control plane.
+SOVRA defines a deterministic execution control plane.
 
 It provides:
 

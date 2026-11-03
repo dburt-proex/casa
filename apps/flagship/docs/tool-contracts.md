@@ -1,6 +1,6 @@
-# CASA Tool Contracts Checklist
+# SOVRA Tool Contracts Checklist
 
-This document outlines the end-to-end contracts for the Gemini tools used in the CASA Operator Chat.
+This document outlines the end-to-end contracts for the Gemini tools used in the SOVRA Operator Chat.
 
 ## 1. fetchDashboard
 - **Expected input schema:** `{}` (Empty object)

@@ -1,6 +1,6 @@
-# CASA Threat Model Specification
+# SOVRA Threat Model Specification
 
-Control Awareness System Architecture
+Sovereign Operations & Verified Runtime Architecture
 Detinistic Governance Control Plane for Autonomous Systems
 
 Version: 0.1.0
@@ -10,13 +10,13 @@ Status: Draft – Normative Threat Model
 
 # 1. Purpose
 
-This document defines the formal threat model for CASA.
+This document defines the formal threat model for SOVRA.
 
 The objective is to enumerate system-level failure modes that threaten deterministic governance and bounded autonomy.
 
 The threat model focuses on execution control failure — not model misalignment, not ethics, and not policy philosophy.
 
-CASA assumes:
+SOVRA assumes:
 
 * Agents can reason unpredictably
 * Tools can return adversarial or malformed outputs
@@ -48,7 +48,7 @@ The control plane must remain deterministic under these conditions.
 * External API data
 * User-provided content
 
-CASA treats all reasoning output as untrusted until gated.
+SOVRA treats all reasoning output as untrusted until gated.
 
 ---
 
@@ -57,7 +57,7 @@ CASA treats all reasoning output as untrusted until gated.
 ## T1 — Execution Without Gate
 
 **Description:**
-Agent executes tool or state mutation without passing through CASA gate.
+Agent executes tool or state mutation without passing through SOVRA gate.
 
 **Impact:**
 Total governance bypass.
@@ -221,7 +221,7 @@ Mitigation:
 
 # 5. System Integrity Guarantees
 
-CASA guarantees:
+SOVRA guarantees:
 
 1. No execution without gate authorization
 2. Tier 3 always HALT
@@ -235,14 +235,14 @@ If any guarantee fails, governance integrity is compromised.
 
 # 6. Residual Risk
 
-CASA does not eliminate:
+SOVRA does not eliminate:
 
 * Incorrect reasoning
 * Malicious human override
 * Legal non-compliance outside defined policy
 * Strategic misconfiguration of policy
 
-CASA enforces boundaries; it does not define them.
+SOVRA enforces boundaries; it does not define them.
 
 ---
 
@@ -269,10 +269,10 @@ Repeated C3 or C4 incidents trigger:
 
 # 9. Conclusion
 
-The CASA threat model centers on deterministic execution control.
+The SOVRA threat model centers on deterministic execution control.
 
 Threat mitigation is structural, not advisory.
 
 Governance fails when execution authority becomes ambiguous.
 
-CASA exists to prevent ambiguity.
+SOVRA exists to prevent ambiguity.
